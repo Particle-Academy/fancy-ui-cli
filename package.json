@@ -1,6 +1,6 @@
 {
   "name": "@particle-academy/fancy-ui",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "fancy-ui CLI — vendor Fancy UI component source from the hosted registry into your project (the shadcn-style copy-the-source path).",
   "repository": {
     "type": "git",
