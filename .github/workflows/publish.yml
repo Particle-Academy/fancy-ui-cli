@@ -26,20 +26,9 @@ jobs:
       - name: Build
         run: npm run build
 
-      # First publish bootstrap: npm Trusted Publishing (OIDC) can't be
-      # configured for a package that doesn't exist on the registry yet, so the
-      # very first release authenticates with an NPM_TOKEN secret. The package
-      # name `fancy-ui` is UNSCOPED — the token must have write access broad
-      # enough to publish a brand-new unscoped package.
-      #
-      # Requires npm 11.5.1+ (the runner ships npm 10.x), so fetch a fresh npm
-      # via npx.
-      #
-      # ── After v0.1.0 lands ──────────────────────────────────────────────
-      # Configure the Trusted Publisher (npmjs.com → fancy-ui → Settings →
-      # Publishing access → GitHub Actions) and then DELETE the `env:` block
-      # below. OIDC + `--provenance` will authenticate tokenlessly thereafter.
+      # Trusted Publishing (OIDC) — no token. The Trusted Publisher is configured
+      # on npmjs.com for the `fancy-cli` package; the bootstrap NPM_TOKEN secret
+      # has been removed. OIDC needs npm 11.5+; the runner ships npm 10, so fetch
+      # a fresh npm via npx for the publish.
       - name: Publish
         run: npx -y npm@latest publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
