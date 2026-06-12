@@ -88,7 +88,7 @@ export async function add(
   if (names.length === 0) {
     throw new CliError(
       `No component name given.`,
-      `Usage: fancy-ui add <name...>   e.g. fancy-ui add card`,
+      `Usage: fancy-cli add <name...>   e.g. fancy-cli add card`,
     );
   }
 

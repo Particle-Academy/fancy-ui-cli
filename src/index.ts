@@ -12,10 +12,10 @@ import { bold, cyan, dim, red, yellow } from "./colors.js";
 // runtime fs reads of package.json from inside the bundled dist.
 const VERSION = "0.1.0";
 
-const HELP = `${bold("fancy-ui")} ${dim(`v${VERSION}`)} — vendor Fancy UI component source from the registry.
+const HELP = `${bold("fancy-cli")} ${dim(`v${VERSION}`)} — vendor Fancy UI component source from the registry.
 
 ${bold("Usage")}
-  npx fancy-ui <command> [options]
+  npx fancy-cli <command> [options]
 
 ${bold("Commands")}
   ${cyan("init")}                 Configure this project (writes ${bold("fancy.json")}).
@@ -37,12 +37,12 @@ ${bold("add options")}
   ${cyan("--no-install")}         Don't run the package manager to install deps.
 
 ${bold("Examples")}
-  npx fancy-ui init
-  npx fancy-ui add card
-  npx fancy-ui add card calendar accordion
-  npx fancy-ui list
-  npx fancy-ui search calendar
-  npx fancy-ui diff card
+  npx fancy-cli init
+  npx fancy-cli add card
+  npx fancy-cli add card calendar accordion
+  npx fancy-cli list
+  npx fancy-cli search calendar
+  npx fancy-cli diff card
 
 Docs: ${cyan("https://ui.particle.academy/docs/cli")}
 `;
@@ -102,7 +102,7 @@ export async function run(argv: string[]): Promise<number> {
     default:
       stderr.write(
         `${red(`Unknown command:`)} ${bold(String(command))}\n\n` +
-          `Run ${cyan("fancy-ui --help")} to see available commands.\n`,
+          `Run ${cyan("fancy-cli --help")} to see available commands.\n`,
       );
       return 1;
   }
@@ -146,7 +146,7 @@ function shouldRunMain(): boolean {
       here === entryUrl ||
       here.endsWith("/index.js") ||
       here.endsWith("/index.ts") ||
-      entry.endsWith("fancy-ui")
+      entry.endsWith("fancy-cli")
     );
   } catch {
     return false;

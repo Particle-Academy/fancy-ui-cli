@@ -92,7 +92,7 @@ export async function readConfig(cwd: string = process.cwd()): Promise<FancyConf
   if (!(await fileExists(p))) {
     throw new CliError(
       `No ${CONFIG_FILENAME} found in this project.`,
-      `Run \`npx fancy-ui init\` first to configure the vendor flow.`,
+      `Run \`npx fancy-cli init\` first to configure the vendor flow.`,
     );
   }
   let raw: string;

@@ -1,6 +1,6 @@
-# fancy-ui
+# fancy-cli
 
-The **`fancy-ui` CLI** is the *vendor path* for [Fancy UI](https://ui.particle.academy) — it fetches component source from the hosted registry and writes the files into **your** project, so you own the code (the shadcn-style "copy the source" flow).
+The **`fancy-cli` CLI** is the *vendor path* for [Fancy UI](https://ui.particle.academy) — it fetches component source from the hosted registry and writes the files into **your** project, so you own the code (the shadcn-style "copy the source" flow).
 
 Once a component is vendored it's just files in your codebase. There is no runtime dependency on this CLI: delete `fancy.json`, uninstall the CLI, and the vendored components keep working.
 
@@ -11,13 +11,13 @@ Once a component is vendored it's just files in your codebase. There is no runti
 Run it with `npx` — no global install required. The `@latest` tag keeps you on the registry-compatible version:
 
 ```bash
-npx @particle-academy/fancy-ui@latest init
+npx fancy-cli@latest init
 ```
 
 Pin a version for reproducibility:
 
 ```bash
-npx @particle-academy/fancy-ui@0.1.0 init
+npx fancy-cli@0.1.0 init
 ```
 
 **Requires Node 18+** (global `fetch`). Zero runtime dependencies.
@@ -25,9 +25,9 @@ npx @particle-academy/fancy-ui@0.1.0 init
 ## Quick start
 
 ```bash
-npx @particle-academy/fancy-ui@latest init        # configure the project (writes fancy.json)
-npx @particle-academy/fancy-ui@latest add card    # vendor a component + its deps
-npx @particle-academy/fancy-ui@latest list        # browse everything available
+npx fancy-cli@latest init        # configure the project (writes fancy.json)
+npx fancy-cli@latest add card    # vendor a component + its deps
+npx fancy-cli@latest list        # browse everything available
 ```
 
 ## Commands
@@ -49,9 +49,9 @@ It writes a `fancy.json` at the project root and **refuses to clobber an existin
 | `--force` | Overwrite an existing `fancy.json`. |
 
 ```bash
-npx @particle-academy/fancy-ui init
-npx @particle-academy/fancy-ui init --yes          # CI-friendly, all defaults
-npx @particle-academy/fancy-ui init --force        # reconfigure an existing project
+npx fancy-cli init
+npx fancy-cli init --yes          # CI-friendly, all defaults
+npx fancy-cli init --force        # reconfigure an existing project
 ```
 
 ### `add <name...>`
@@ -71,10 +71,10 @@ It **never overwrites a file you've already vendored** unless you pass `--overwr
 | `--no-install` | Don't run the package manager; just print the install command. |
 
 ```bash
-npx @particle-academy/fancy-ui add card
-npx @particle-academy/fancy-ui add card calendar accordion
-npx @particle-academy/fancy-ui add card --overwrite
-npx @particle-academy/fancy-ui add card --no-install
+npx fancy-cli add card
+npx fancy-cli add card calendar accordion
+npx fancy-cli add card --overwrite
+npx fancy-cli add card --no-install
 ```
 
 ### `list`
@@ -82,7 +82,7 @@ npx @particle-academy/fancy-ui add card --no-install
 Show every component in the registry, grouped by package with a per-package count and aligned `name  title  description` columns:
 
 ```bash
-npx @particle-academy/fancy-ui list
+npx fancy-cli list
 
 # react-fancy (54)
 #   accordion   Accordion   Stateful disclosure surface.
@@ -100,7 +100,7 @@ npx @particle-academy/fancy-ui list
 Case-insensitive substring match across `name`, `title`, and `description`:
 
 ```bash
-npx @particle-academy/fancy-ui search calendar
+npx fancy-cli search calendar
 ```
 
 ### `diff <name>`
@@ -108,7 +108,7 @@ npx @particle-academy/fancy-ui search calendar
 Compare your local vendored copy against the latest registry version and print a unified diff. Useful for spotting upstream improvements you might want to merge in. **It never applies changes** — the whole point of vendoring is that you may have customized the local copy.
 
 ```bash
-npx @particle-academy/fancy-ui diff card
+npx fancy-cli diff card
 ```
 
 The diff is a self-contained LCS-based unified diff (no `git` required).

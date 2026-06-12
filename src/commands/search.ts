@@ -45,7 +45,7 @@ export async function search(
   if (!query || query.trim() === "") {
     throw new CliError(
       `No search query given.`,
-      `Usage: fancy-ui search <query>   e.g. fancy-ui search calendar`,
+      `Usage: fancy-cli search <query>   e.g. fancy-cli search calendar`,
     );
   }
   const registry = await resolveRegistry(cwd);

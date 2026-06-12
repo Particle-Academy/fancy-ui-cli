@@ -115,7 +115,7 @@ export async function init(flags: InitFlags): Promise<number> {
     `${dim("  registry   →")} ${cyan(DEFAULT_REGISTRY)}\n`,
   );
   stdout.write(
-    `\nNext: ${cyan("npx fancy-ui add card")}\n`,
+    `\nNext: ${cyan("npx fancy-cli add card")}\n`,
   );
   if (!autoInstall) {
     stdout.write(

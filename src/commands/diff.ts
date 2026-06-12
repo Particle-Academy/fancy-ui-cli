@@ -32,7 +32,7 @@ export async function diff(
   if (!name || name.trim() === "") {
     throw new CliError(
       `No component name given.`,
-      `Usage: fancy-ui diff <name>   e.g. fancy-ui diff card`,
+      `Usage: fancy-cli diff <name>   e.g. fancy-cli diff card`,
     );
   }
   const config = await readConfig(cwd);
@@ -67,7 +67,7 @@ export async function diff(
   if (!anyLocal) {
     throw new CliError(
       `No local copy of "${name}" found.`,
-      `Vendor it first: fancy-ui add ${name}`,
+      `Vendor it first: fancy-cli add ${name}`,
     );
   }
   if (!anyChange) {
