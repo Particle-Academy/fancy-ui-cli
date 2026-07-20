@@ -14,10 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Type errors under  in the edit-distance and version
+- Type errors under `noUncheckedIndexedAccess` in the edit-distance and version
   comparison helpers. 0.2.0 published with a **failing lint job** — the tests,
   the build, and an end-to-end run against a stub registry all passed, because
-   does not typecheck and only  does. Runtime behaviour was
+  `tsup` does not typecheck and only `tsc --noEmit` does. Runtime behaviour was
   correct in 0.2.0; this is types only.
 
 ## [0.2.0] — 2026-07-20
