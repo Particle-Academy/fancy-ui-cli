@@ -5,12 +5,14 @@ import { add } from "./commands/add.js";
 import { list } from "./commands/list.js";
 import { search } from "./commands/search.js";
 import { diff } from "./commands/diff.js";
+import { addNode } from "./commands/add-node.js";
+import { listNodes, searchNodes } from "./commands/nodes.js";
 import { CliError } from "./errors.js";
 import { bold, cyan, dim, red, yellow } from "./colors.js";
 
 // Kept in sync with package.json by the build; hardcoded so we have zero
 // runtime fs reads of package.json from inside the bundled dist.
-const VERSION = "0.1.0";
+const VERSION = "0.2.0";
 
 const HELP = `${bold("fancy-cli")} ${dim(`v${VERSION}`)} — vendor Fancy UI component source from the registry.
 
@@ -24,6 +26,11 @@ ${bold("Commands")}
   ${cyan("search <query>")}       Substring search across name / title / description.
   ${cyan("diff <name>")}          Diff your local copy against the latest registry version.
 
+${bold("Workflow nodes")} ${dim("— fancy-flow node packages")}
+  ${cyan("add node <kind...>")}   Install node package(s), after checking they run on your runtimes.
+  ${cyan("list nodes")}           List every published node, grouped by category.
+  ${cyan("search nodes <query>")} Find a node by concept before you hand-roll one.
+
 ${bold("Options")}
   ${cyan("-h, --help")}           Show this help.
   ${cyan("-v, --version")}        Print the CLI version.
@@ -35,6 +42,7 @@ ${bold("init options")}
 ${bold("add options")}
   ${cyan("--overwrite")}          Overwrite files that already exist on disk.
   ${cyan("--no-install")}         Don't run the package manager to install deps.
+  ${cyan("--force")}              ${dim("(add node)")} Install despite a runtime mismatch.
 
 ${bold("Examples")}
   npx fancy-cli init
@@ -43,12 +51,30 @@ ${bold("Examples")}
   npx fancy-cli list
   npx fancy-cli search calendar
   npx fancy-cli diff card
+  npx fancy-cli search nodes "route with an llm"
+  npx fancy-cli add node @acme/salesforce_upsert
 
 Docs: ${cyan("https://ui.particle.academy/docs/cli")}
 `;
 
 function printHelp(): void {
   stdout.write(HELP + "\n");
+}
+
+/**
+ * Whether to run the package manager.
+ *
+ * Node's `parseArgs` does NOT negate `--no-install` into `install: false` — it
+ * records a separate `no-install` key and leaves the default in place. So every
+ * `--no-install` since this CLI shipped ran the package manager anyway, which
+ * for a tool that shells out to npm is doing the opposite of what it was told.
+ *
+ * Exported so the behaviour is tested directly rather than re-derived in a
+ * test, which would only ever assert that two copies of a bug agree.
+ */
+export function resolveInstallFlag(values: Record<string, unknown>): boolean {
+  if (values["no-install"] === true) return false;
+  return values.install !== false;
 }
 
 export async function run(argv: string[]): Promise<number> {
@@ -68,6 +94,8 @@ export async function run(argv: string[]): Promise<number> {
 
   const command = positionals[0];
   const rest = positionals.slice(1);
+
+  const install = resolveInstallFlag(values);
 
   // Top-level --version / --help (with or without a command).
   if (values.version && !command) {
@@ -89,14 +117,18 @@ export async function run(argv: string[]): Promise<number> {
         force: Boolean(values.force),
       });
     case "add":
-      return add(rest, {
-        overwrite: Boolean(values.overwrite),
-        install: values.install !== false,
-      });
+      // `add node <kind>` is a workflow node package, not a component. The
+      // subcommand rather than a flag because the two install entirely
+      // different things: components vendor source files, nodes install
+      // per-runtime packages after a compatibility check.
+      if (rest[0] === "node" || rest[0] === "nodes") {
+        return addNode(rest.slice(1), { install, force: Boolean(values.force) });
+      }
+      return add(rest, { overwrite: Boolean(values.overwrite), install });
     case "list":
-      return list();
+      return rest[0] === "nodes" ? listNodes() : list();
     case "search":
-      return search(rest[0]);
+      return rest[0] === "nodes" ? searchNodes(rest[1]) : search(rest[0]);
     case "diff":
       return diff(rest[0]);
     default:

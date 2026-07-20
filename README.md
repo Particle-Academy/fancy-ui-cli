@@ -113,6 +113,73 @@ npx fancy-cli diff card
 
 The diff is a self-contained LCS-based unified diff (no `git` required).
 
+## Workflow nodes
+
+Components are vendored as source. **Workflow nodes are different**: a node is a
+kind definition plus an executor for *each runtime you execute on*, so they are
+installed as packages, per runtime, after a compatibility check.
+
+### `search nodes <query>`
+
+```bash
+npx fancy-cli search nodes "route with an llm"
+npx fancy-cli search nodes s3
+```
+
+Matches kind, title, description, and category. **Search before you build one** —
+the expensive failure isn't "couldn't install it", it's not knowing a node
+existed and hand-rolling a worse version in your app code.
+
+### `list nodes`
+
+```bash
+npx fancy-cli list nodes
+```
+
+Grouped by category. Every row shows which runtimes the node implements, because
+a node that only implements one is unusable to half the audience and you should
+see that while browsing, not at install.
+
+### `add node <kind...>`
+
+```bash
+npx fancy-cli add node @acme/salesforce_upsert
+```
+
+Before installing anything, this checks the node against the runtimes **your**
+project executes on — read from `@particle-academy/fancy-flow` in `package.json`
+and `particle-academy/fancy-flow-php` in `composer.json`.
+
+A node that doesn't implement one of your runtimes, or needs an engine newer
+than yours, is **refused**:
+
+```
+✗ @acme/route_llm implements ts, but this project executes on php.
+  It would install, appear in the palette, and then fail to run.
+
+Not installed. Pass --force to install anyway.
+```
+
+That refusal is the point of the command. Without it the node installs cleanly,
+shows up in the palette, and fails at run time — which looks like it worked.
+
+On success it also prints what you must wire before the node can run:
+
+- **Required capabilities** — an LLM client, a document editor, a host service.
+  A required capability that isn't registered means the node can't run at all.
+- **Pauses for a human** — needs a resume path, and can't be embedded in a
+  workflow that must run unattended.
+- **Unsafe to replay** — durable runs retry, so a node that writes needs a guard
+  or a scoped retry policy.
+
+PHP dependencies are printed for you to run, never executed: a PHP project's
+dependency resolution isn't something a JS CLI should trigger on your behalf.
+
+| Flag | Effect |
+|---|---|
+| `--no-install` | Print the install command instead of running it. |
+| `--force` | Install despite a runtime or engine mismatch. |
+
 ### Global flags
 
 | Flag | Effect |
