@@ -177,18 +177,24 @@ function editDistance(a: string, b: string): number {
   if (a.length === 0) return b.length;
   if (b.length === 0) return a.length;
 
-  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  // Typed as a dense number[] and indexed through locals, because
+  // `noUncheckedIndexedAccess` types every read as `number | undefined` — and
+  // an arithmetic expression full of `!` is harder to read than three names.
+  let prev: number[] = Array.from({ length: b.length + 1 }, (_, i) => i);
 
   for (let i = 1; i <= a.length; i++) {
-    const row = [i];
+    const row: number[] = [i];
     for (let j = 1; j <= b.length; j++) {
       const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-      row[j] = Math.min(row[j - 1] + 1, prev[j] + 1, prev[j - 1] + cost);
+      const deletion = (row[j - 1] ?? 0) + 1;
+      const insertion = (prev[j] ?? 0) + 1;
+      const substitution = (prev[j - 1] ?? 0) + cost;
+      row[j] = Math.min(deletion, insertion, substitution);
     }
     prev = row;
   }
 
-  return prev[b.length];
+  return prev[b.length] ?? 0;
 }
 
 /**
@@ -364,7 +370,9 @@ function parseVersion(version: string): [number, number, number] | null {
 
 function compare(a: [number, number, number], b: [number, number, number]): number {
   for (let i = 0; i < 3; i++) {
-    if (a[i] !== b[i]) return a[i] < b[i] ? -1 : 1;
+    const left = a[i] ?? 0;
+    const right = b[i] ?? 0;
+    if (left !== right) return left < right ? -1 : 1;
   }
   return 0;
 }
