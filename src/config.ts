@@ -60,6 +60,36 @@ export function resolveNodeDirs(config: FancyConfig): { ts: string; php: string 
 }
 
 /**
+ * Rewrite a vendored PHP file's namespace to match where it now lives.
+ *
+ * A node's source declares `FancyFlow\Nodes\<Node>`, which is correct in the
+ * marketplace repo and wrong the moment the file is copied into an app — PHP
+ * resolves a class by its namespace, and PSR-4 maps the app's own root. Left
+ * alone, every vendored PHP node is unautoloadable: the file is there, the class
+ * is not, and the error names a class nobody wrote.
+ *
+ * So the namespace is rewritten the same way the TypeScript side rewrites the
+ * `components/fancy/` prefix onto the configured directory. `dirs.flowNodesPhp`
+ * decides the root: `app/Flow/Nodes` → `App\Flow\Nodes`, following Laravel's
+ * own PSR-4 convention of the capitalised path.
+ */
+export function rewritePhpNamespace(content: string, config: FancyConfig): string {
+  const root = resolveNodeDirs(config)
+    .php.replace(/\\/g, "/")
+    .split("/")
+    .filter(Boolean)
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join("\\");
+
+  // Both the declaration and any `use` of a sibling in the same node — a node's
+  // executor imports its own GitHost, and a half-rewritten file is worse than
+  // an unrewritten one because it fails further from the cause.
+  return content
+    .replace(/^namespace\s+FancyFlow\\Nodes\\/gm, `namespace ${root}\\`)
+    .replace(/^use\s+FancyFlow\\Nodes\\/gm, `use ${root}\\`);
+}
+
+/**
  * Resolve one node file's on-disk path.
  *
  * `target` arrives from the registry as `<node>/<part>/<file>` — e.g.

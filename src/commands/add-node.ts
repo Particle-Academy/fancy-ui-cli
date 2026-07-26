@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { stdout } from "node:process";
-import { fileExists, readConfig, resolveNodeTargetPath } from "../config.js";
+import { fileExists, readConfig, resolveNodeTargetPath, rewritePhpNamespace } from "../config.js";
 import {
   fetchNode,
   detectHostRuntimes,
@@ -254,7 +254,11 @@ export async function addNode(
         continue;
       }
       await mkdir(path.dirname(dest), { recursive: true });
-      await writeFile(dest, file.content, "utf8");
+      // PHP resolves a class by its namespace, so a vendored file has to be
+      // told where it now lives — otherwise the file is in the app and the
+      // class is not, and the error names a class nobody wrote.
+      const content = dest.endsWith(".php") ? rewritePhpNamespace(file.content, config) : file.content;
+      await writeFile(dest, content, "utf8");
       written.push(rel);
     }
 

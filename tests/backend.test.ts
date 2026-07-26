@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { resolveBackendFlag } from "../src/index.js";
 import { detectBackend, plan } from "../src/commands/add-node.js";
+import { rewritePhpNamespace } from "../src/config.js";
 import type { NodeManifest } from "../src/nodes.js";
 
 /**
@@ -109,5 +110,43 @@ describe("--backend=none", () => {
     // about it would be the tool arguing with an explicit instruction.
     expect(plan(BOTH, "none").problem).toBeUndefined();
     expect(plan(manifest({}), "none").problem).toBeUndefined();
+  });
+});
+
+describe("vendored PHP lands in the project's namespace", () => {
+  // PHP resolves a class by its namespace. A node's source declares
+  // `FancyFlow\Nodes\<Node>` — correct in the marketplace repo, wrong the
+  // moment it is copied into an app. Left alone every vendored PHP node is
+  // unautoloadable: the file is there, the class is not.
+  const config = { registry: "https://x", aliases: { components: "@/components", utils: "@/lib" }, rsc: false, tsx: true, tailwind: { css: "app.css" } } as any;
+
+  it("rewrites the declaration to the configured root", () => {
+    const out = rewritePhpNamespace("namespace FancyFlow\\Nodes\\GitPrOpen;", config);
+
+    expect(out).toBe("namespace App\\Flow\\Nodes\\GitPrOpen;");
+  });
+
+  it("rewrites a sibling import too", () => {
+    // A node's executor imports its own GitHost. Half-rewriting fails further
+    // from the cause than not rewriting at all.
+    const out = rewritePhpNamespace("use FancyFlow\\Nodes\\GitPrOpen\\GitHost;", config);
+
+    expect(out).toBe("use App\\Flow\\Nodes\\GitPrOpen\\GitHost;");
+  });
+
+  it("follows dirs.flowNodesPhp when the project configures one", () => {
+    const custom = { ...config, dirs: { components: "resources/js/components", flowNodesPhp: "app/Workflow/nodes" } };
+
+    expect(rewritePhpNamespace("namespace FancyFlow\\Nodes\\X;", custom)).toBe(
+      "namespace App\\Workflow\\Nodes\\X;",
+    );
+  });
+
+  it("leaves the engine's own imports alone", () => {
+    // `use FancyFlow\Contracts\NodeExecutor` points at the engine, which the
+    // project really does install. Rewriting it would break the import.
+    const src = "use FancyFlow\\Contracts\\NodeExecutor;\nuse FancyFlow\\Runtime\\Port;";
+
+    expect(rewritePhpNamespace(src, config)).toBe(src);
   });
 });
