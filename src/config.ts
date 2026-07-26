@@ -28,10 +28,55 @@ export interface FancyConfig {
   tailwind: {
     css: string;
   };
-  /** Where component files are written on disk. Schema-additive. */
+  /** Where vendored files are written on disk. Schema-additive. */
   dirs?: {
     components: string;
+    /**
+     * Where a workflow node's TypeScript (its UI + JS backend) lands.
+     * Defaults to `{components}/flow-nodes`.
+     */
+    flowNodes?: string;
+    /**
+     * Where a workflow node's PHP backend lands. Defaults to `app/Flow/Nodes`,
+     * the PSR-4 root a Laravel app already autoloads.
+     */
+    flowNodesPhp?: string;
   };
+}
+
+/**
+ * Where a node's vendored files go.
+ *
+ * Nodes are copied in, like components — so the two halves land in the two
+ * places a project actually keeps them: TypeScript beside the other Fancy
+ * components, PHP under `app/`. One node, one source, two destinations, because
+ * no project puts React and PHP in the same directory.
+ */
+export function resolveNodeDirs(config: FancyConfig): { ts: string; php: string } {
+  return {
+    ts: config.dirs?.flowNodes ?? path.join(resolveComponentsDir(config), "flow-nodes"),
+    php: config.dirs?.flowNodesPhp ?? path.join("app", "Flow", "Nodes"),
+  };
+}
+
+/**
+ * Resolve one node file's on-disk path.
+ *
+ * `target` arrives from the registry as `<node>/<part>/<file>` — e.g.
+ * `ui-effect/php/UiEffectExecutor.php`. The part decides which root it lands
+ * under; the rest of the path is preserved so a node's own layout survives the
+ * copy.
+ */
+export function resolveNodeTargetPath(
+  config: FancyConfig,
+  target: string,
+  cwd: string = process.cwd(),
+): string {
+  const normalized = target.replace(/\\/g, "/").replace(/^\/+/, "");
+  const dirs = resolveNodeDirs(config);
+  const isPhp = normalized.split("/").includes("php");
+
+  return path.join(cwd, isPhp ? dirs.php : dirs.ts, normalized);
 }
 
 export function configPath(cwd: string = process.cwd()): string {

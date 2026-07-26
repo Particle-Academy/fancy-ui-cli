@@ -1,7 +1,7 @@
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { stdout } from "node:process";
-import { readConfig, DEFAULT_REGISTRY } from "../config.js";
+import { fileExists, readConfig, resolveNodeTargetPath } from "../config.js";
 import {
   fetchNode,
   detectHostRuntimes,
@@ -20,13 +20,20 @@ export interface AddNodeFlags {
   /**
    * Which runtime executes the node. Omit to detect it from the project.
    *
-   * The UI is installed either way — see {@link plan}.
+   * The UI is copied either way — see {@link plan}.
    */
   backend?: BackendId;
+  /** Overwrite node files already on disk. */
+  overwrite?: boolean;
 }
 
-/** The runtimes a node's logic can run on. */
-export type BackendId = "php" | "js";
+/**
+ * Where a node's logic runs — or `none` for the surface only.
+ *
+ * `none` is for a project that authors graphs and does not execute them: the
+ * editor, the palette and the config panel, with no executor to maintain.
+ */
+export type BackendId = "php" | "js" | "none";
 
 /**
  * Detect the backend from the project.
@@ -40,52 +47,53 @@ export function detectBackend(composerJson: unknown): BackendId {
 }
 
 /** The runtime id a backend maps to in a manifest's `runtimes`. */
-const RUNTIME_FOR: Record<BackendId, string> = { php: "php", js: "ts" };
+const RUNTIME_FOR: Record<BackendId, string> = { php: "php", js: "ts", none: "" };
 
 /**
- * What to install for one node, given the chosen backend.
+ * Which of a node's source directories to copy, given the chosen backend.
  *
- * ## Why the npm package is installed either way
+ * A node is vendored, not installed: one source, copied into the project, the
+ * same way components are. So this returns directory names — `ui`, `js`, `php`
+ * — and the caller writes every file under them.
+ *
+ * ## Why `ui` comes down whichever backend you pick
  *
  * A node is a UI *and* a backend, and the UI is React on every host — a Laravel
- * app still renders the editor in the browser. Treating `ts` and `php` as two
- * interchangeable runtimes and picking one is how a Laravel project ends up
- * with a node it can execute and cannot see: installed, no palette entry, no
- * config panel. So the npm package comes down for the surface whenever the node
- * publishes one, and the backend choice decides what runs the graph.
+ * app still renders the editor in a browser. Treating `ts` and `php` as two
+ * interchangeable runtimes and copying one is how a Laravel project ends up
+ * with a node it can execute and cannot see: files on disk, no palette entry,
+ * no config panel, and nothing saying why.
  */
 export function plan(
   manifest: NodeManifest,
   backend: BackendId,
-): { npm: string[]; composer: string[]; problem?: string } {
-  const npm: string[] = [];
-  const composer: string[] = [];
+): { parts: string[]; problem?: string } {
   const runtimes = manifest.runtimes ?? {};
+  const ui = manifest.ui ?? [];
 
-  // The surface. `ts` is the npm side of a node, which carries the kind
-  // definition whichever runtime executes it.
-  const ui = runtimes.ts;
-  if (ui) npm.push(ui.package ?? manifest.name);
+  // Asked for no backend, so a missing one is not a problem to report — it is
+  // exactly what was requested. Warning here would be the tool arguing with an
+  // explicit instruction.
+  if (backend === "none") return { parts: [...ui] };
 
   const wanted = runtimes[RUNTIME_FOR[backend]];
+
   if (!wanted) {
     const has = Object.keys(runtimes).join(", ") || "none";
     return {
-      npm,
-      composer,
+      // Still take the UI — a node you can see and cannot run is at least
+      // legible, and the message below says exactly what is missing.
+      parts: [...ui],
       problem:
         `This node has no ${backend} backend (it implements: ${has}). ` +
-        `Installed anyway it would appear in the palette and fail at run time.`,
+        `Copied anyway it would appear in the palette and fail at run time.`,
     };
   }
 
-  if (backend === "php") {
-    // A PHP backend is a Composer requirement, which this CLI never runs for
-    // you — a PHP project's dependency resolution is not a JS CLI's to trigger.
-    composer.push(wanted.package ?? manifest.name);
-  }
-
-  return { npm, composer };
+  // The surface, then this backend's source. Never another backend's: a Laravel
+  // project has no use for the JS executor and would end up with two
+  // implementations of a node it runs once.
+  return { parts: [...new Set([...ui, ...(wanted.files ?? [])])] };
 }
 
 async function readJsonIfPresent(file: string): Promise<unknown> {
@@ -93,14 +101,6 @@ async function readJsonIfPresent(file: string): Promise<unknown> {
     return JSON.parse(await readFile(file, "utf8"));
   } catch {
     return undefined;
-  }
-}
-
-async function resolveRegistry(cwd: string): Promise<string> {
-  try {
-    return (await readConfig(cwd)).registry;
-  } catch {
-    return DEFAULT_REGISTRY;
   }
 }
 
@@ -181,12 +181,14 @@ export async function addNode(
     );
   }
 
-  const registry = await resolveRegistry(cwd);
+  const config = await readConfig(cwd);
+  const registry = config.registry;
   const host = await detectHost(cwd);
   const composerJson = await readJsonIfPresent(path.join(cwd, "composer.json"));
   const backend = flags.backend ?? detectBackend(composerJson);
   const npmDeps: string[] = [];
-  const composerDeps: string[] = [];
+  const written: string[] = [];
+  const skipped: string[] = [];
   let blocked = false;
 
   stdout.write(
@@ -213,63 +215,88 @@ export async function addNode(
 
     if (errors.length > 0 && !flags.force) {
       // Refuse rather than warn. A palette entry that cannot execute is worse
-      // than a failed install: it looks like it worked.
+      // than a failed copy: it looks like it worked.
       stdout.write(
-        `\n${red("Not installed.")} Pass ${cyan("--force")} to install anyway ` +
+        `\n${red("Not added.")} Pass ${cyan("--force")} to copy it anyway ` +
           `${dim("(the node will appear in the palette and fail at run time)")}.\n`,
       );
       blocked = true;
       continue;
     }
     if (errors.length > 0 && flags.force) {
-      stdout.write(`\n${yellow("Installing anyway (--force).")}\n`);
+      stdout.write(`\n${yellow("Copying anyway (--force).")}\n`);
     }
 
     stdout.write(renderCapabilities(manifest) + renderPlanningFacts(manifest));
 
-    const parts = plan(manifest, backend);
+    const { parts, problem } = plan(manifest, backend);
 
-    if (parts.problem) {
-      stdout.write(`\n${red("✗")} ${parts.problem}\n`);
+    if (problem) {
+      stdout.write(`\n${red("✗")} ${problem}\n`);
       if (!flags.force) {
         blocked = true;
         continue;
       }
     }
 
-    npmDeps.push(...parts.npm);
-    composerDeps.push(...parts.composer);
+    // The node's source, copied in. Nothing is installed — a node lives in the
+    // project the same way a vendored component does, so it can be read, edited
+    // and diffed rather than hidden in node_modules or vendor.
+    const wanted = new Set(parts);
+    const files = manifest.files.filter((f) => wanted.has(partOf(f.target)));
+
+    for (const file of files) {
+      const dest = resolveNodeTargetPath(config, file.target, cwd);
+      const rel = path.relative(cwd, dest).replace(/\\/g, "/");
+
+      if ((await fileExists(dest)) && !flags.overwrite) {
+        skipped.push(rel);
+        continue;
+      }
+      await mkdir(path.dirname(dest), { recursive: true });
+      await writeFile(dest, file.content, "utf8");
+      written.push(rel);
+    }
+
+    for (const dep of manifest.dependencies ?? []) npmDeps.push(dep);
   }
 
-  const uniqueNpm = [...new Set(npmDeps)];
-  const uniqueComposer = [...new Set(composerDeps)];
-
-  // Printed BEFORE the install runs. A failing npm install would otherwise
-  // swallow the half of the instructions the CLI cannot carry out itself,
-  // leaving a half-installed node and no record of what was still owed.
-  if (uniqueComposer.length > 0) {
-    // Never run composer on the user's behalf — a PHP project's dependency
-    // resolution is not ours to trigger from a JS CLI.
+  if (written.length > 0) {
+    stdout.write(`\n${bold("Added")}\n${written.map((f) => `  ${green("+")} ${f}`).join("\n")}\n`);
+  }
+  if (skipped.length > 0) {
     stdout.write(
-      `\n${bold("For the PHP runtime, run this yourself:")}\n  ${cyan(`composer require ${uniqueComposer.join(" ")}`)}\n`,
+      `\n${bold("Skipped")} ${dim("(already present — pass --overwrite)")}\n` +
+        skipped.map((f) => `  ${yellow("•")} ${f}`).join("\n") +
+        "\n",
     );
   }
 
+  // A node's own npm dependencies — the libraries its source imports, NOT the
+  // node itself. There is no package for the node.
+  const uniqueNpm = [...new Set(npmDeps)];
   if (uniqueNpm.length > 0) {
     const pm = await detectPackageManager(cwd);
     if (flags.install !== false) {
-      stdout.write(`\n${dim(`Installing: ${installCommand(pm, uniqueNpm)}`)}\n`);
+      stdout.write(`\n${dim(`Installing dependencies: ${installCommand(pm, uniqueNpm)}`)}\n`);
       await runInstall(pm, uniqueNpm, cwd);
     } else {
-      stdout.write(`\n${bold("Install:")} ${cyan(installCommand(pm, uniqueNpm))}\n`);
+      stdout.write(`\n${bold("Dependencies:")} ${cyan(installCommand(pm, uniqueNpm))}\n`);
     }
   }
 
-  if (uniqueNpm.length === 0 && uniqueComposer.length === 0 && !blocked) {
-    stdout.write(`\n${yellow("Nothing to install")} — no runtime matched this project.\n`);
+  if (written.length === 0 && skipped.length === 0 && !blocked) {
+    stdout.write(`\n${yellow("Nothing copied")} — the node published no files for this backend.\n`);
   }
 
   return blocked ? 1 : 0;
+}
+
+/** `ui-effect/php/Foo.php` → `php`. The directory that decides where it lands. */
+function partOf(target: string): string {
+  const segments = target.replace(/\\/g, "/").split("/").filter(Boolean);
+
+  return segments[1] ?? "";
 }
 
 async function detectHost(cwd: string): Promise<HostRuntimes> {

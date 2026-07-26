@@ -36,23 +36,53 @@ import { CliError } from "./errors.js";
 
 /** How one runtime provides a node, and which engine version it needs. */
 export interface NodeRuntimeSpec {
-  /** Module path within the package (TS-style runtimes). */
-  entry?: string;
-  /** Dependency requirement resolved by that ecosystem (PHP/Composer-style). */
-  package?: string;
+  /**
+   * The node source directories this runtime needs, relative to the node.
+   *
+   * A node is vendored, not installed 2014 `fancy-cli add node` copies these into
+   * the project the way it copies a component. `ts` claims `ui` + `js`, `php`
+   * claims `php`.
+   */
+  files?: string[];
   /** Semver range of THIS runtime's engine. */
   engine: string;
 }
 
+/** One vendored file: where it came from, where it goes, what is in it. */
+export interface NodeFile {
+  /** `<node>/<part>/<file>` — e.g. `ui-effect/php/UiEffectExecutor.php`. */
+  target: string;
+  content: string;
+}
+
 export interface NodeManifest {
   schemaVersion: number;
+  /** The marketplace source this node came from. Nothing is installed from it. */
   name: string;
   kind: string;
   aliases?: string[];
   configVersion?: number;
+  /**
+   * The node's SURFACE — its React kind — copied whichever backend you pick.
+   *
+   * Separate from `runtimes` on purpose. The editor is React on every host, so
+   * a Laravel project needs these files and does NOT need the JS executor. Fold
+   * the two together and a PHP host either loses its palette entry or gains a
+   * second implementation of the node it will never run.
+   */
+  ui?: string[];
   runtimes: Record<string, NodeRuntimeSpec>;
   capabilities?: Record<string, "required" | "optional">;
   fixtures: string;
+  /**
+   * The node's source, served by the registry and written into the project.
+   *
+   * A node is vendored, not installed — the files ARE the node, the same way a
+   * component's files are the component.
+   */
+  files: NodeFile[];
+  /** npm packages the node's own source imports. NOT the node itself. */
+  dependencies?: string[];
   pausesForHuman?: string;
   sideEffects?: "none" | "idempotent" | "unsafe-to-replay";
   description?: string;

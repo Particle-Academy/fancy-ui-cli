@@ -13,11 +13,19 @@ import type { NodeManifest } from "../src/nodes.js";
  * what runs the graph.
  */
 const manifest = (runtimes: NodeManifest["runtimes"]): NodeManifest =>
-  ({ schemaVersion: 1, name: "@pa/nodes", kind: "@pa/thing", runtimes, fixtures: "f.json" }) as NodeManifest;
+  ({
+    schemaVersion: 1,
+    name: "particle-academy/fancy-flow-nodes",
+    kind: "@pa/thing",
+    ui: ["ui"],
+    runtimes,
+    fixtures: "f.json",
+    files: [],
+  }) as NodeManifest;
 
 const BOTH = manifest({
-  ts: { entry: "./dist/thing.js", engine: ">=0.30.0" },
-  php: { package: "pa/nodes:^0.1", engine: ">=0.9.0" },
+  ts: { files: ["js"], engine: ">=0.30.0" },
+  php: { files: ["php"], engine: ">=0.9.0" },
 });
 
 describe("--backend", () => {
@@ -57,26 +65,49 @@ describe("detection", () => {
   });
 });
 
-describe("what gets installed", () => {
-  it("installs the UI and the PHP backend for a Laravel host", () => {
-    expect(plan(BOTH, "php")).toEqual({ npm: ["@pa/nodes"], composer: ["pa/nodes:^0.1"] });
+describe("which source gets copied", () => {
+  it("copies the UI and the PHP backend for a Laravel host", () => {
+    // Not the JS executor: that project runs the graph on PHP and would end up
+    // with two implementations of a node it runs once.
+    expect(plan(BOTH, "php").parts).toEqual(["ui", "php"]);
   });
 
-  it("installs only npm for a Node host — the UI and executor are one package", () => {
-    expect(plan(BOTH, "js")).toEqual({ npm: ["@pa/nodes"], composer: [] });
+  it("copies the UI and the JS backend for a Node host", () => {
+    expect(plan(BOTH, "js").parts).toEqual(["ui", "js"]);
   });
 
-  it("still installs the UI when the chosen backend is missing, and says so", () => {
-    const tsOnly = manifest({ ts: { entry: "./dist/thing.js", engine: ">=0.30.0" } });
+  it("still copies the UI when the chosen backend is missing, and says so", () => {
+    // A node you can see and cannot run is at least legible; one that is
+    // neither is a silent failure.
+    const tsOnly = manifest({ ts: { files: ["js"], engine: ">=0.30.0" } });
     const result = plan(tsOnly, "php");
 
     expect(result.problem).toMatch(/no php backend/i);
-    expect(result.composer).toEqual([]);
+    expect(result.parts).toContain("ui");
   });
 
-  it("reports a node with no UI rather than inventing one", () => {
-    const phpOnly = manifest({ php: { package: "pa/nodes:^0.1", engine: ">=0.9.0" } });
+  it("copies only php for a node that publishes no UI", () => {
+    const phpOnly = { ...manifest({ php: { files: ["php"], engine: ">=0.9.0" } }), ui: undefined };
 
-    expect(plan(phpOnly, "php")).toEqual({ npm: [], composer: ["pa/nodes:^0.1"] });
+    expect(plan(phpOnly as any, "php").parts).toEqual(["php"]);
+  });
+});
+
+describe("--backend=none", () => {
+  it("is a real choice, not a typo", () => {
+    for (const value of ["none", "ui", "ui-only"]) {
+      expect(resolveBackendFlag(value)).toBe("none");
+    }
+  });
+
+  it("copies the surface and nothing else", () => {
+    expect(plan(BOTH, "none").parts).toEqual(["ui"]);
+  });
+
+  it("reports no problem for the backend it was told not to want", () => {
+    // Asked for no backend, so a missing one is what was requested — warning
+    // about it would be the tool arguing with an explicit instruction.
+    expect(plan(BOTH, "none").problem).toBeUndefined();
+    expect(plan(manifest({}), "none").problem).toBeUndefined();
   });
 });

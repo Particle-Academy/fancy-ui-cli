@@ -10,6 +10,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-07-26
+
+### Changed
+
+- **BREAKING: `add node` copies a node's SOURCE instead of installing packages.**
+  A node is now vendored, exactly like a component: the files land in your
+  project where you can read, edit and diff them, rather than in `node_modules`
+  and `vendor` as two packages that have to be kept in step.
+
+  ```
+  components/fancy/flow-nodes/<node>/ui/…   the React kind — palette + config panel
+  components/fancy/flow-nodes/<node>/js/…   the TypeScript executor  (--backend=js)
+  app/Flow/Nodes/<node>/php/…               the PHP executor         (--backend=php)
+  ```
+
+  Both destinations are configurable in `fancy.json` via `dirs.flowNodes` and
+  `dirs.flowNodesPhp`. `--overwrite` replaces files already on disk; without it
+  they are reported as skipped, so a re-run never silently discards your edits.
+
+  **What you must DO:** `add node` now needs a `fancy.json` (run
+  `npx fancy-cli init`) because it has to know where to write. Nothing else —
+  the registry served no nodes before this, so nothing was installed the old
+  way. npm installs still happen for a node's own *dependencies*: the libraries
+  its source imports, never the node itself.
+
 ## [0.3.0] — 2026-07-26
 
 ### Added
@@ -24,23 +49,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   A `composer.json` means PHP executes here and wins the detection: an Inertia
   app has both manifests, and in that pairing PHP is running the workflow while
   npm is only carrying the editor. `laravel` / `composer` and `node` / `npm` /
-  `ts` are accepted spellings; a typo is an **error**, not a quiet fall back to
-  detection — passing the flag means you did not want the guess.
+  `ts` are accepted spellings, and `none` / `ui-only` take the surface alone —
+  for a project that authors graphs but never runs them. A typo is an **error**,
+  not a quiet fall back to detection: passing the flag means you did not want
+  the guess.
 
 ### Fixed
 
-- **A node's UI is now installed whichever backend runs it.** `add node`
-  installed a package per runtime the project executes on, treating `ts` and
-  `php` as interchangeable. But a node is a UI *and* a backend, and the UI is
+- **A node's UI now arrives whichever backend runs it.** `add node` installed a
+  package per runtime the project executes on, treating `ts` and `php` as
+  interchangeable. But a node is a UI *and* a backend, and the UI is
   React on every host — a Laravel app still renders the editor in a browser. So
   a PHP project could install a node it was able to execute and unable to see:
   no palette entry, no config panel, and nothing saying why.
 
-  The npm package now comes down for the surface whenever a node publishes one,
-  and the backend choice decides only what runs the graph. A node with no
-  backend for your choice is still refused (`--force` overrides), and Composer
-  requirements are still printed for you to run rather than executed — a PHP
-  project's dependency resolution is not a JS CLI's to trigger.
+  The surface is copied whenever a node publishes one, and the backend choice
+  decides only what runs the graph. A node with no backend for your choice is
+  still refused (`--force` overrides).
 
 ## [0.2.1] — 2026-07-20
 
