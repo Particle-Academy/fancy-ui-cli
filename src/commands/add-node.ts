@@ -17,6 +17,75 @@ export interface AddNodeFlags {
   install?: boolean;
   /** Install despite an incompatibility. Prints what is being overridden. */
   force?: boolean;
+  /**
+   * Which runtime executes the node. Omit to detect it from the project.
+   *
+   * The UI is installed either way — see {@link plan}.
+   */
+  backend?: BackendId;
+}
+
+/** The runtimes a node's logic can run on. */
+export type BackendId = "php" | "js";
+
+/**
+ * Detect the backend from the project.
+ *
+ * A `composer.json` means PHP executes here, and that wins: an Inertia app has
+ * BOTH manifests, and in that pairing PHP is the one running the workflow while
+ * npm is only carrying the editor.
+ */
+export function detectBackend(composerJson: unknown): BackendId {
+  return composerJson ? "php" : "js";
+}
+
+/** The runtime id a backend maps to in a manifest's `runtimes`. */
+const RUNTIME_FOR: Record<BackendId, string> = { php: "php", js: "ts" };
+
+/**
+ * What to install for one node, given the chosen backend.
+ *
+ * ## Why the npm package is installed either way
+ *
+ * A node is a UI *and* a backend, and the UI is React on every host — a Laravel
+ * app still renders the editor in the browser. Treating `ts` and `php` as two
+ * interchangeable runtimes and picking one is how a Laravel project ends up
+ * with a node it can execute and cannot see: installed, no palette entry, no
+ * config panel. So the npm package comes down for the surface whenever the node
+ * publishes one, and the backend choice decides what runs the graph.
+ */
+export function plan(
+  manifest: NodeManifest,
+  backend: BackendId,
+): { npm: string[]; composer: string[]; problem?: string } {
+  const npm: string[] = [];
+  const composer: string[] = [];
+  const runtimes = manifest.runtimes ?? {};
+
+  // The surface. `ts` is the npm side of a node, which carries the kind
+  // definition whichever runtime executes it.
+  const ui = runtimes.ts;
+  if (ui) npm.push(ui.package ?? manifest.name);
+
+  const wanted = runtimes[RUNTIME_FOR[backend]];
+  if (!wanted) {
+    const has = Object.keys(runtimes).join(", ") || "none";
+    return {
+      npm,
+      composer,
+      problem:
+        `This node has no ${backend} backend (it implements: ${has}). ` +
+        `Installed anyway it would appear in the palette and fail at run time.`,
+    };
+  }
+
+  if (backend === "php") {
+    // A PHP backend is a Composer requirement, which this CLI never runs for
+    // you — a PHP project's dependency resolution is not a JS CLI's to trigger.
+    composer.push(wanted.package ?? manifest.name);
+  }
+
+  return { npm, composer };
 }
 
 async function readJsonIfPresent(file: string): Promise<unknown> {
@@ -114,9 +183,19 @@ export async function addNode(
 
   const registry = await resolveRegistry(cwd);
   const host = await detectHost(cwd);
+  const composerJson = await readJsonIfPresent(path.join(cwd, "composer.json"));
+  const backend = flags.backend ?? detectBackend(composerJson);
   const npmDeps: string[] = [];
   const composerDeps: string[] = [];
   let blocked = false;
+
+  stdout.write(
+    `\n${bold("Backend")} ${cyan(backend)}` +
+      (flags.backend
+        ? ""
+        : dim(` (detected from ${composerJson ? "composer.json" : "package.json"} — override with --backend)`)) +
+      "\n",
+  );
 
   for (const kind of kinds) {
     const manifest = await fetchNode(registry, kind);
@@ -148,12 +227,18 @@ export async function addNode(
 
     stdout.write(renderCapabilities(manifest) + renderPlanningFacts(manifest));
 
-    for (const [runtime, spec] of Object.entries(manifest.runtimes ?? {})) {
-      if (!host.runtimes.includes(runtime)) continue;
-      if (runtime === "php" && spec.package) composerDeps.push(spec.package);
-      else if (spec.package) npmDeps.push(spec.package);
-      else npmDeps.push(manifest.name);
+    const parts = plan(manifest, backend);
+
+    if (parts.problem) {
+      stdout.write(`\n${red("✗")} ${parts.problem}\n`);
+      if (!flags.force) {
+        blocked = true;
+        continue;
+      }
     }
+
+    npmDeps.push(...parts.npm);
+    composerDeps.push(...parts.composer);
   }
 
   const uniqueNpm = [...new Set(npmDeps)];

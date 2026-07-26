@@ -10,6 +10,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-07-26
+
+### Added
+
+- **`add node --backend=php|js`**, and detection when you omit it.
+
+  ```bash
+  npx fancy-cli add node @particle-academy/ui_effect                 # detected
+  npx fancy-cli add node @particle-academy/ui_effect --backend=php   # explicit
+  ```
+
+  A `composer.json` means PHP executes here and wins the detection: an Inertia
+  app has both manifests, and in that pairing PHP is running the workflow while
+  npm is only carrying the editor. `laravel` / `composer` and `node` / `npm` /
+  `ts` are accepted spellings; a typo is an **error**, not a quiet fall back to
+  detection — passing the flag means you did not want the guess.
+
+### Fixed
+
+- **A node's UI is now installed whichever backend runs it.** `add node`
+  installed a package per runtime the project executes on, treating `ts` and
+  `php` as interchangeable. But a node is a UI *and* a backend, and the UI is
+  React on every host — a Laravel app still renders the editor in a browser. So
+  a PHP project could install a node it was able to execute and unable to see:
+  no palette entry, no config panel, and nothing saying why.
+
+  The npm package now comes down for the surface whenever a node publishes one,
+  and the backend choice decides only what runs the graph. A node with no
+  backend for your choice is still refused (`--force` overrides), and Composer
+  requirements are still printed for you to run rather than executed — a PHP
+  project's dependency resolution is not a JS CLI's to trigger.
+
 ## [0.2.1] — 2026-07-20
 
 ### Fixed

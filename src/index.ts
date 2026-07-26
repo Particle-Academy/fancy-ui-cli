@@ -12,7 +12,7 @@ import { bold, cyan, dim, red, yellow } from "./colors.js";
 
 // Kept in sync with package.json by the build; hardcoded so we have zero
 // runtime fs reads of package.json from inside the bundled dist.
-const VERSION = "0.2.1";
+const VERSION = "0.3.0";
 
 const HELP = `${bold("fancy-cli")} ${dim(`v${VERSION}`)} — vendor Fancy UI component source from the registry.
 
@@ -43,6 +43,8 @@ ${bold("add options")}
   ${cyan("--overwrite")}          Overwrite files that already exist on disk.
   ${cyan("--no-install")}         Don't run the package manager to install deps.
   ${cyan("--force")}              ${dim("(add node)")} Install despite a runtime mismatch.
+  ${cyan("--backend=php|js")}     ${dim("(add node)")} Which runtime executes the node. Detected from the
+                        project when omitted. The UI is installed either way.
 
 ${bold("Examples")}
   npx fancy-cli init
@@ -77,6 +79,27 @@ export function resolveInstallFlag(values: Record<string, unknown>): boolean {
   return values.install !== false;
 }
 
+/**
+ * `--backend=php|js`, or undefined to let `add node` detect it.
+ *
+ * A typo must not silently become "detect it for me" — the whole point of
+ * passing the flag is that you did not want the guess. Common spellings for the
+ * two ecosystems are accepted rather than lectured about; anything else is an
+ * error naming what is valid.
+ */
+export function resolveBackendFlag(value: unknown): "php" | "js" | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+
+  const normalized = String(value).trim().toLowerCase();
+  if (["php", "laravel", "composer"].includes(normalized)) return "php";
+  if (["js", "ts", "node", "npm", "typescript", "javascript"].includes(normalized)) return "js";
+
+  throw new CliError(
+    `Unknown backend "${value}".`,
+    `Use ${bold("--backend=php")} (Laravel / Composer) or ${bold("--backend=js")} (Node / npm), or omit it to detect from the project.`,
+  );
+}
+
 export async function run(argv: string[]): Promise<number> {
   const { values, positionals } = parseArgs({
     args: argv,
@@ -89,6 +112,7 @@ export async function run(argv: string[]): Promise<number> {
       force: { type: "boolean" },
       overwrite: { type: "boolean" },
       install: { type: "boolean", default: true },
+      backend: { type: "string" },
     },
   });
 
@@ -122,7 +146,11 @@ export async function run(argv: string[]): Promise<number> {
       // different things: components vendor source files, nodes install
       // per-runtime packages after a compatibility check.
       if (rest[0] === "node" || rest[0] === "nodes") {
-        return addNode(rest.slice(1), { install, force: Boolean(values.force) });
+        return addNode(rest.slice(1), {
+          install,
+          force: Boolean(values.force),
+          backend: resolveBackendFlag(values.backend),
+        });
       }
       return add(rest, { overwrite: Boolean(values.overwrite), install });
     case "list":
