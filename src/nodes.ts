@@ -55,6 +55,17 @@ export interface NodeFile {
   content: string;
 }
 
+/** A Fancy suite package a node needs. Unversioned by contract. */
+export interface FancyDependency {
+  /** Suite slug — what `/packages/<slug>` documents. */
+  package: string;
+  npm?: string;
+  composer?: string;
+  /** Why the node needs it, printed alongside the install command. */
+  reason?: string;
+  requirement?: "required" | "optional";
+}
+
 export interface NodeManifest {
   schemaVersion: number;
   /** The marketplace source this node came from. Nothing is installed from it. */
@@ -73,6 +84,15 @@ export interface NodeManifest {
   ui?: string[];
   runtimes: Record<string, NodeRuntimeSpec>;
   capabilities?: Record<string, "required" | "optional">;
+  /**
+   * Fancy suite packages the node's source imports.
+   *
+   * Kept apart from `dependencies` because the suite is polyglot and
+   * vendorable: the same capability ships on npm, on Composer, and as source
+   * you copy in, and which route a consumer wants depends on the host. Never
+   * versioned — see the manifest contract in fancy-flow.
+   */
+  fancyDependencies?: FancyDependency[];
   fixtures: string;
   /**
    * The node's source, served by the registry and written into the project.

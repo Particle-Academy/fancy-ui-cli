@@ -7,9 +7,10 @@ import {
   detectHostRuntimes,
   checkNodeCompat,
   type NodeManifest,
+  type FancyDependency,
   type HostRuntimes,
 } from "../nodes.js";
-import { detectPackageManager, runInstall, installCommand } from "../pm.js";
+import { detectPackageManager, runInstall, installCommand, type PackageManager } from "../pm.js";
 import { CliError } from "../errors.js";
 import { bold, green, yellow, dim, cyan, red } from "../colors.js";
 
@@ -123,6 +124,71 @@ function renderCapabilities(manifest: NodeManifest): string {
 }
 
 /**
+ * Which install routes exist for a suite package, on the chosen backend.
+ *
+ * The UI comes down whichever backend you pick, so an npm-only package is
+ * needed on a PHP host too — its editor is still React. A Composer route is
+ * only offered when PHP is what executes here; printing `composer require` to
+ * a Node project would be an instruction that cannot be followed.
+ */
+export function installRoutes(
+  dep: FancyDependency,
+  backend: BackendId,
+  pm: PackageManager,
+): { label: string; cmd: string }[] {
+  const routes: { label: string; cmd: string }[] = [];
+
+  if (dep.npm) routes.push({ label: "npm", cmd: installCommand(pm, [dep.npm]) });
+  if (dep.composer && backend === "php") {
+    routes.push({ label: "composer", cmd: `composer require ${dep.composer}` });
+  }
+  // Vendoring is always available and is the route this CLI exists for: the
+  // source lands in the project, editable and diffable, with no package to
+  // upgrade. Listed last because most consumers want the package.
+  routes.push({ label: "vendor", cmd: `fancy-cli add ${dep.package}` });
+
+  return routes;
+}
+
+/**
+ * Suite packages the node needs, and how to get each one.
+ *
+ * A node is copied in, not installed, so nothing resolves its imports for it:
+ * without this the first sign that `llm_screen` needs fancy-screens is a red
+ * module-not-found at build time, naming a package the consumer never chose.
+ *
+ * No versions anywhere, by contract — see `FancyDependency` in fancy-flow. The
+ * CLI never generates one either: a range printed here would be copied into a
+ * manifest, and the pin the contract refuses would arrive by the back door.
+ */
+export function renderFancyDependencies(
+  manifest: NodeManifest,
+  backend: BackendId,
+  pm: PackageManager,
+): string {
+  const deps = manifest.fancyDependencies ?? [];
+  if (deps.length === 0) return "";
+
+  const blocks = deps.map((dep) => {
+    const optional = dep.requirement === "optional";
+    const head =
+      `  ${optional ? dim("optional") : yellow("needed")}  ${bold(dep.package)}` +
+      (dep.reason ? ` ${dim(`— ${dep.reason}`)}` : "");
+    const routes = installRoutes(dep, backend, pm)
+      .map((r) => `      ${dim(r.label.padEnd(9))}${cyan(r.cmd)}`)
+      .join("\n");
+
+    return `${head}\n${routes}`;
+  });
+
+  return (
+    `\n${bold("Fancy packages this node uses")} ${dim("— not installed for you; pick a route")}\n` +
+    blocks.join("\n") +
+    "\n"
+  );
+}
+
+/**
  * Facts a host needs BEFORE running a graph, surfaced at install rather than
  * discovered from a run's behaviour.
  *
@@ -186,6 +252,9 @@ export async function addNode(
   const host = await detectHost(cwd);
   const composerJson = await readJsonIfPresent(path.join(cwd, "composer.json"));
   const backend = flags.backend ?? detectBackend(composerJson);
+  // Detected once, before the loop: it reads the lockfiles, and the answer
+  // cannot change between two nodes in the same command.
+  const pm = await detectPackageManager(cwd);
   const npmDeps: string[] = [];
   const written: string[] = [];
   const skipped: string[] = [];
@@ -227,7 +296,11 @@ export async function addNode(
       stdout.write(`\n${yellow("Copying anyway (--force).")}\n`);
     }
 
-    stdout.write(renderCapabilities(manifest) + renderPlanningFacts(manifest));
+    stdout.write(
+      renderCapabilities(manifest) +
+        renderFancyDependencies(manifest, backend, pm) +
+        renderPlanningFacts(manifest),
+    );
 
     const { parts, problem } = plan(manifest, backend);
 
@@ -280,7 +353,6 @@ export async function addNode(
   // node itself. There is no package for the node.
   const uniqueNpm = [...new Set(npmDeps)];
   if (uniqueNpm.length > 0) {
-    const pm = await detectPackageManager(cwd);
     if (flags.install !== false) {
       stdout.write(`\n${dim(`Installing dependencies: ${installCommand(pm, uniqueNpm)}`)}\n`);
       await runInstall(pm, uniqueNpm, cwd);

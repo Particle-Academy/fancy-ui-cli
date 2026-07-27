@@ -10,6 +10,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-07-26
+
+### Added
+
+- **`add node` prints the Fancy packages a node needs, and how to get each one.**
+
+  A node is copied into your project, not installed, so nothing resolves its
+  imports for it. Until now the first sign that `llm_screen` needed
+  fancy-screens was a module-not-found at build time, naming a package you never
+  chose.
+
+  ```
+  Fancy packages this node uses — not installed for you; pick a route
+    needed  fancy-screens — renders the generated schema
+        npm      npm install @particle-academy/fancy-screens
+        vendor   fancy-cli add fancy-screens
+  ```
+
+  Routes are filtered by what the project can actually do: `composer require`
+  only appears on a PHP host, while an npm-only package is offered **everywhere**
+  — the node's UI comes down whichever backend you pick, because the editor is
+  React even in a Laravel app. Vendoring is always offered.
+
+  Reads `fancyDependencies` from the node manifest (fancy-flow 0.33.0+). **No
+  version is ever printed**, by contract — a range shown here gets pasted into a
+  manifest, and the pin the validator refuses arrives by the back door.
+
+  **Nothing to do.** Nodes without the field print nothing, as before.
+
 ## [0.4.0] — 2026-07-26
 
 ### Changed
