@@ -39,7 +39,7 @@ export interface NodeRuntimeSpec {
   /**
    * The node source directories this runtime needs, relative to the node.
    *
-   * A node is vendored, not installed 2014 `fancy-cli add node` copies these into
+   * A node is vendored, not installed — `fancy-cli add node` copies these into
    * the project the way it copies a component. `ts` claims `ui` + `js`, `php`
    * claims `php`.
    */

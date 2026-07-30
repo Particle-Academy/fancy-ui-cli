@@ -70,7 +70,7 @@ export async function listNodes(cwd: string = process.cwd()): Promise<number> {
   }
 
   stdout.write(
-    `\n${dim(`${index.items.length} node(s). ${green("✓")} = verified. Install with`)} ${cyan("fancy-cli add node <kind>")}\n`,
+    `\n${dim(`${index.items.length} node(s). ${green("✓")} = verified. Install with`)} ${cyan("npx fancy-cli@latest add node <kind>")}\n`,
   );
   return 0;
 }

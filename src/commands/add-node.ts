@@ -145,7 +145,7 @@ export function installRoutes(
   // Vendoring is always available and is the route this CLI exists for: the
   // source lands in the project, editable and diffable, with no package to
   // upgrade. Listed last because most consumers want the package.
-  routes.push({ label: "vendor", cmd: `fancy-cli add ${dep.package}` });
+  routes.push({ label: "vendor", cmd: `npx fancy-cli@latest add ${dep.package}` });
 
   return routes;
 }

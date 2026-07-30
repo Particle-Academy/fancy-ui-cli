@@ -50,7 +50,7 @@ describe("install routes", () => {
   it("always offers vendoring, which needs no registry at all", () => {
     expect(installRoutes(SCREENS, "none", "npm").at(-1)).toEqual({
       label: "vendor",
-      cmd: "fancy-cli add fancy-screens",
+      cmd: "npx fancy-cli@latest add fancy-screens",
     });
   });
 
@@ -72,7 +72,7 @@ describe("rendering", () => {
     expect(out).toContain("fancy-screens");
     expect(out).toContain("renders the generated interface");
     expect(out).toContain("npm install @particle-academy/fancy-screens");
-    expect(out).toContain("fancy-cli add fancy-screens");
+    expect(out).toContain("npx fancy-cli@latest add fancy-screens");
   });
 
   it("distinguishes a package the node degrades without", () => {

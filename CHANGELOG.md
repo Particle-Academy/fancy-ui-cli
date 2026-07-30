@@ -10,6 +10,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-07-30
+
+### Fixed
+
+- **0.6.0 still printed the un-updated install command in its own output.** The
+  0.6.0 sweep matched only strings beginning `npx fancy-cli add`, so the ones the
+  CLI prints itself — bare `fancy-cli add …` — were missed. Caught by running the
+  published 0.6.0 and reading what it actually said:
+
+  ```
+  8 node(s). ✓ = verified. Install with fancy-cli add node <kind>
+  ```
+
+  `list nodes`, `diff` and the fancy-dependency vendor route now print
+  `npx fancy-cli@latest add …`.
+
+  **Usage lines are deliberately left bare** (`Usage: fancy-cli add <name...>`).
+  Those show the command's shape, and an `npx pkg@latest` prefix inside a usage
+  string reads as part of the syntax rather than as the way to run it.
+
+- Restored an em-dash in a `nodes.ts` doc comment that had been written out as
+  the literal text `2014` (its codepoint). Pre-existing — identical in the prior
+  commit — fixed in passing.
+
 ## [0.6.0] - 2026-07-30
 
 ### Added

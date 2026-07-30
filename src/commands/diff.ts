@@ -67,7 +67,7 @@ export async function diff(
   if (!anyLocal) {
     throw new CliError(
       `No local copy of "${name}" found.`,
-      `Vendor it first: fancy-cli add ${name}`,
+      `Vendor it first: npx fancy-cli@latest add ${name}`,
     );
   }
   if (!anyChange) {

@@ -13,7 +13,7 @@ import { bold, cyan, dim, red, yellow } from "./colors.js";
 
 // Kept in sync with package.json by the build; hardcoded so we have zero
 // runtime fs reads of package.json from inside the bundled dist.
-const VERSION = "0.6.0";
+const VERSION = "0.6.1";
 
 const HELP = `${bold("fancy-cli")} ${dim(`v${VERSION}`)} — vendor Fancy UI component source from the registry.
 
