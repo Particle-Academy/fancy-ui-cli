@@ -71,10 +71,10 @@ It **never overwrites a file you've already vendored** unless you pass `--overwr
 | `--no-install` | Don't run the package manager; just print the install command. |
 
 ```bash
-npx fancy-cli add card
-npx fancy-cli add card calendar accordion
-npx fancy-cli add card --overwrite
-npx fancy-cli add card --no-install
+npx fancy-cli@latest add card
+npx fancy-cli@latest add card calendar accordion
+npx fancy-cli@latest add card --overwrite
+npx fancy-cli@latest add card --no-install
 ```
 
 ### `list`
@@ -143,7 +143,7 @@ see that while browsing, not at install.
 ### `add node <kind...>`
 
 ```bash
-npx fancy-cli add node @acme/salesforce_upsert
+npx fancy-cli@latest add node @acme/salesforce_upsert
 ```
 
 Before installing anything, this checks the node against the runtimes **your**

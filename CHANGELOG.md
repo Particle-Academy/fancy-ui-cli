@@ -10,6 +10,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-07-30
+
+### Added
+
+- **The CLI now tells you when it is out of date.** `npx` caches by package
+  name, so plain `npx fancy-cli …` happily reuses a copy from months ago — and
+  every install string the docs, the MCP tools and the plugins published said
+  exactly that rather than `npx fancy-cli@latest …`. A developer could sit on a
+  months-old CLI indefinitely with nothing to indicate it.
+
+  The check runs **after** the command, only on success, writes one line to
+  stderr, times out at 1.5s, and swallows every failure — offline, proxied or
+  blocked registries stay silent. `FANCY_CLI_NO_UPDATE_CHECK=1` turns it off.
+
+- **`schemaVersion` is enforced.** It has been on the manifest type since the
+  first release and was **never read**. An older CLI meeting a node that uses a
+  newer manifest field did not fail — it installed the parts it recognised and
+  dropped the rest in silence, surfacing later as "the node is in my palette but
+  it doesn't run", with nothing pointing at the cause. A manifest declaring a
+  schema above `SUPPORTED_SCHEMA_VERSION` is now a hard error naming the fix.
+
+  **No node is affected today** — all eight published nodes declare
+  `schemaVersion: 1`, and a manifest omitting it is treated as v1, so nothing
+  that installs now stops installing.
+
+### Fixed
+
+- An undetectable host runtime no longer swallows other problems.
+  `checkNodeCompat` returned a fresh array in that branch, discarding anything
+  found earlier — so "I can't tell your runtime" would have hidden "this CLI is
+  too old to install this node", the more fundamental of the two.
+
+### Changed
+
+- Every published install string now reads `npx fancy-cli@latest add …` — 27
+  of them across the CLI, both editor plugins, the showcase docs, the MCP tools
+  and the registry sources. **Node *content* never needed a CLI update** (`add
+  node` reads the live registry), but CLI *features* always did, and the command
+  we told people to run was the one that could silently skip them.
+
 ## [0.5.0] — 2026-07-26
 
 ### Added

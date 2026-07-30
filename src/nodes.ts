@@ -313,20 +313,64 @@ function cleanRange(spec: string): string | undefined {
  * version is a WARNING rather than silence, because "we did not check" and "it
  * is fine" must not look the same.
  */
+/**
+ * The newest node manifest schema this CLI understands.
+ *
+ * Bump when a manifest field is added that a node genuinely cannot work without
+ * — NOT for additive fields an older CLI can safely ignore.
+ */
+export const SUPPORTED_SCHEMA_VERSION = 1;
+
+/**
+ * Refuse a node whose manifest is newer than this CLI.
+ *
+ * `schemaVersion` was on the manifest type from the start and **never read**.
+ * Combined with `npx` caching by package name — and with every install string
+ * we published saying `npx fancy-cli add …` rather than `@latest` — a developer
+ * could be running a CLI from months ago, meet a node using a field it has
+ * never heard of, and get a *partial* install: the parts it understood, silently,
+ * with no error. That surfaces later as "the node is in my palette but it does
+ * not run", with nothing pointing at the cause.
+ *
+ * A manifest with NO `schemaVersion` is treated as v1, which is what every node
+ * published before this check shipped is.
+ */
+export function checkSchemaVersion(manifest: NodeManifest): CompatProblem[] {
+  const declared = manifest.schemaVersion ?? 1;
+
+  if (!Number.isFinite(declared) || declared <= SUPPORTED_SCHEMA_VERSION) {
+    return [];
+  }
+
+  return [
+    {
+      level: "error",
+      message:
+        `${manifest.kind} declares manifest schema v${declared}, but this fancy-cli understands up to v${SUPPORTED_SCHEMA_VERSION}. ` +
+        `Installing it here would copy only the parts this version recognises and silently drop the rest. ` +
+        `Run it with \`npx fancy-cli@latest\` — plain \`npx fancy-cli\` can reuse a cached older copy.`,
+    },
+  ];
+}
+
 export function checkNodeCompat(manifest: NodeManifest, host: HostRuntimes): CompatProblem[] {
-  const problems: CompatProblem[] = [];
+  const problems: CompatProblem[] = [...checkSchemaVersion(manifest)];
   const provided = Object.keys(manifest.runtimes ?? {});
 
   if (host.runtimes.length === 0) {
-    return [
-      {
-        level: "warning",
-        message:
-          `Could not tell which runtime this project executes workflows on ` +
-          `(no @particle-academy/fancy-flow in package.json, no particle-academy/fancy-flow-php in composer.json). ` +
-          `${manifest.kind} implements ${provided.join(", ") || "no runtime"} — check that against your setup.`,
-      },
-    ];
+    // Appended, NOT returned fresh — a literal array here would discard the
+    // schema-version error above, and "we cannot tell your runtime" would hide
+    // "this CLI is too old to install this node at all", which is the more
+    // fundamental of the two and the one with an action attached.
+    problems.push({
+      level: "warning",
+      message:
+        `Could not tell which runtime this project executes workflows on ` +
+        `(no @particle-academy/fancy-flow in package.json, no particle-academy/fancy-flow-php in composer.json). ` +
+        `${manifest.kind} implements ${provided.join(", ") || "no runtime"} — check that against your setup.`,
+    });
+
+    return problems;
   }
 
   const missing = host.runtimes.filter((r) => !provided.includes(r));

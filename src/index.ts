@@ -8,11 +8,12 @@ import { diff } from "./commands/diff.js";
 import { addNode } from "./commands/add-node.js";
 import { listNodes, searchNodes } from "./commands/nodes.js";
 import { CliError } from "./errors.js";
+import { warnIfOutdated } from "./update-check.js";
 import { bold, cyan, dim, red, yellow } from "./colors.js";
 
 // Kept in sync with package.json by the build; hardcoded so we have zero
 // runtime fs reads of package.json from inside the bundled dist.
-const VERSION = "0.5.0";
+const VERSION = "0.6.0";
 
 const HELP = `${bold("fancy-cli")} ${dim(`v${VERSION}`)} — vendor Fancy UI component source from the registry.
 
@@ -49,13 +50,13 @@ ${bold("add options")}
 
 ${bold("Examples")}
   npx fancy-cli init
-  npx fancy-cli add card
-  npx fancy-cli add card calendar accordion
+  npx fancy-cli@latest add card
+  npx fancy-cli@latest add card calendar accordion
   npx fancy-cli list
   npx fancy-cli search calendar
   npx fancy-cli diff card
   npx fancy-cli search nodes "route with an llm"
-  npx fancy-cli add node @acme/salesforce_upsert
+  npx fancy-cli@latest add node @acme/salesforce_upsert
 
 Docs: ${cyan("https://ui.particle.academy/docs/cli")}
 `;
@@ -175,6 +176,18 @@ async function main(): Promise<void> {
   const argv = process.argv.slice(2);
   try {
     const code = await run(argv);
+
+    // AFTER the command, never before: the hint must not delay the work or
+    // interleave with its output. It goes to stderr and is skipped entirely
+    // when the command failed — an upgrade notice stacked on top of a real
+    // error is noise at exactly the wrong moment.
+    //
+    // `npx` caches by package name, so plain `npx fancy-cli` can keep reusing a
+    // copy from months ago. Nothing told anyone; this does.
+    if (code === 0) {
+      await warnIfOutdated(VERSION);
+    }
+
     process.exitCode = code;
   } catch (err) {
     if (err instanceof CliError) {
