@@ -1,7 +1,14 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { stdout } from "node:process";
-import { fileExists, readConfig, resolveNodeTargetPath, rewritePhpNamespace } from "../config.js";
+import {
+  fileExists,
+  readConfig,
+  resolveNodeDirs,
+  resolveNodeTargetPath,
+  rewritePhpNamespace,
+  type FancyConfig,
+} from "../config.js";
 import {
   fetchNode,
   detectHostRuntimes,
@@ -361,11 +368,58 @@ export async function addNode(
     }
   }
 
+  if (written.length > 0) {
+    stdout.write(registrationSteps(backend, config));
+  }
+
   if (written.length === 0 && skipped.length === 0 && !blocked) {
     stdout.write(`\n${yellow("Nothing copied")} — the node published no files for this backend.\n`);
   }
 
   return blocked ? 1 : 0;
+}
+
+/**
+ * What to do with the files now they are on disk.
+ *
+ * Copying a node is not installing it. Until the host REGISTERS the kind, the
+ * node is source sitting in a directory: it never appears in the palette, and a
+ * graph referencing it fails at run time with an unknown kind. Nothing said so,
+ * and every consumer had to work it out — the Moic Suite integration
+ * hand-patched three separate things before a vendored node ran.
+ *
+ * Printed per backend because the two register completely differently, and the
+ * generic advice that used to stand in for this ("wire the capabilities") is the
+ * step AFTER this one.
+ */
+function registrationSteps(backend: BackendId, config: FancyConfig): string {
+  const out: string[] = [`\n${bold("Register it")} ${dim("— copied is not installed")}\n`];
+
+  if (backend === "php") {
+    const dir = resolveNodeDirs(config).php.replace(/\\/g, "/");
+    const namespace = dir
+      .split("/")
+      .filter(Boolean)
+      .map((seg: string) => seg.charAt(0).toUpperCase() + seg.slice(1))
+      .join("\\");
+
+    out.push(
+      `  1. ${cyan("composer dump-autoload")} ${dim(`— the executor is PSR-4 under ${namespace}\\`)}\n`,
+      `  2. ${cyan("php artisan flow:discover")} ${dim("— finds the #[FlowNode] attribute and registers the kind")}\n`,
+      `  3. ${dim("Bind the node's host class (the *Host.php beside the executor) in a service provider.")}\n`,
+      `\n  ${dim("The React kind under the components dir is for the EDITOR. It carries no")}\n`,
+      `  ${dim("executor on purpose — PHP runs the node, the browser only draws it.")}\n`,
+    );
+  } else {
+    out.push(
+      `  1. ${dim("Import the runnable kind (")}${cyan("js/kind.ts")}${dim(") — it is the editor surface WITH the executor attached.")}\n`,
+      `  2. ${cyan("registerNodeKind(<name>RunnableKind)")} ${dim("— before the first run, or a graph using it fails on an unknown kind.")}\n`,
+      `\n  ${dim("Import from ui/kind.ts only if you want the surface WITHOUT an executor")}\n`,
+      `  ${dim("(a PHP-executing host that still renders the editor).")}\n`,
+    );
+  }
+
+  return out.join("");
 }
 
 /** `ui-effect/php/Foo.php` → `php`. The directory that decides where it lands. */

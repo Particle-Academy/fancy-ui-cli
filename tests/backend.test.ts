@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { resolveBackendFlag } from "../src/index.js";
 import { detectBackend, plan } from "../src/commands/add-node.js";
-import { rewritePhpNamespace } from "../src/config.js";
+import { rewritePhpNamespace, resolveNodeTargetPath } from "../src/config.js";
 import type { NodeManifest } from "../src/nodes.js";
 
 /**
@@ -148,5 +148,55 @@ describe("vendored PHP lands in the project's namespace", () => {
     const src = "use FancyFlow\\Contracts\\NodeExecutor;\nuse FancyFlow\\Runtime\\Port;";
 
     expect(rewritePhpNamespace(src, config)).toBe(src);
+  });
+});
+
+describe("the vendored PHP path agrees with its namespace", () => {
+  // The two halves of one promise: rewritePhpNamespace decides what the class
+  // is CALLED, resolveNodeTargetPath decides where it LIVES. PSR-4 only works
+  // if they agree, and nothing checked that they did.
+  //
+  // They did not. The namespace became `App\\Flow\\Nodes\\GitPrOpen` while the file
+  // landed at `app/Flow/Nodes/git-pr-open/php/` — kebab-cased, with an extra
+  // segment. Composer could not autoload it, so the node installed cleanly,
+  // looked right in the file list, and the class did not exist at run time.
+  // Reported by the Moic Suite integration, who patched it by hand per node.
+  const config = {
+    registry: "https://x",
+    aliases: { components: "@/components", utils: "@/lib" },
+    rsc: false,
+    tsx: true,
+    tailwind: { css: "app.css" },
+  } as any;
+
+  const norm = (p: string) => p.split(String.fromCharCode(92)).join("/");
+
+  it("PascalCases the node directory and drops the php segment", () => {
+    const p = norm(resolveNodeTargetPath(config, "git-pr-open/php/GitHost.php", "/app"));
+
+    expect(p).toBe("/app/app/Flow/Nodes/GitPrOpen/GitHost.php");
+    expect(p).not.toContain("git-pr-open");
+    expect(p).not.toContain("/php/");
+  });
+
+  it("puts the class exactly where its rewritten namespace says it is", () => {
+    // The invariant, asserted rather than described: the rewritten namespace,
+    // turned back into a path, must be the path the CLI writes to.
+    const ns = rewritePhpNamespace("namespace FancyFlow\\Nodes\\GitPrOpen;", config)
+      .replace("namespace ", "")
+      .replace(";", "");
+
+    const fromNamespace = "/app/" + ns.split(String.fromCharCode(92)).join("/") + "/GitHost.php";
+    const fromResolver = norm(resolveNodeTargetPath(config, "git-pr-open/php/GitHost.php", "/app"));
+
+    // Case-insensitive: Laravel maps `App\\` to `app/`, so only the segments
+    // below the root must match character for character.
+    expect(fromResolver.toLowerCase()).toBe(fromNamespace.toLowerCase());
+  });
+
+  it("leaves non-PHP targets on the registry path", () => {
+    const p = norm(resolveNodeTargetPath(config, "git-pr-open/ui/kind.ts", "/app"));
+
+    expect(p).toContain("git-pr-open/ui/kind.ts");
   });
 });

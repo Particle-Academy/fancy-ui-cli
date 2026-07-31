@@ -10,6 +10,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-07-31
+
+### Fixed
+
+- **Vendored PHP landed where PSR-4 could not autoload it.** `add node` rewrites
+  a node's namespace to your project's root — `App\Flow\Nodes\GitPrOpen` — but
+  wrote the file to `app/Flow/Nodes/git-pr-open/php/`, kebab-cased and one
+  segment too deep. Composer could not find the class, so the node installed
+  cleanly, looked correct in the file list, and did not exist at run time.
+
+  **If you vendored a node before this, re-run `add node` with `--overwrite`** —
+  or move the directory yourself to the PascalCase name and drop the `php/`
+  level. Reported by the Moic Suite integration, who patched it by hand per node.
+
+  The path and the namespace are now derived from the same rule, and a test
+  asserts they agree rather than describing that they should.
+
+### Added
+
+- **`add node` prints how to REGISTER the node.** Copying a node is not
+  installing it: until the host registers the kind there is no palette entry, and
+  a graph naming the kind fails at run time. Nothing said so, and the generic
+  "wire the capabilities" line the CLI already printed is the step *after* this
+  one. The steps differ per backend, so they print per backend —
+  `composer dump-autoload` + `php artisan flow:discover` on PHP, importing the
+  runnable kind and calling `registerNodeKind` on TS.
+
 ## [0.6.1] - 2026-07-30
 
 ### Fixed

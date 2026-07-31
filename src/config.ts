@@ -89,6 +89,15 @@ export function rewritePhpNamespace(content: string, config: FancyConfig): strin
     .replace(/^use\s+FancyFlow\\Nodes\\/gm, `use ${root}\\`);
 }
 
+/** `git-pr-open` → `GitPrOpen`. The node dir's PSR-4 spelling. */
+export function pascalCase(segment: string): string {
+  return segment
+    .split(/[-_]/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join("");
+}
+
 /**
  * Resolve one node file's on-disk path.
  *
@@ -96,6 +105,21 @@ export function rewritePhpNamespace(content: string, config: FancyConfig): strin
  * `ui-effect/php/UiEffectExecutor.php`. The part decides which root it lands
  * under; the rest of the path is preserved so a node's own layout survives the
  * copy.
+ *
+ * ## PHP lands on its PSR-4 path, not the registry's
+ *
+ * PHP is the exception, and it has to be. {@link rewritePhpNamespace} rewrites
+ * `FancyFlow\Nodes\GitPrOpen` to `App\Flow\Nodes\GitPrOpen` — PascalCase, no
+ * `php` segment, because that is what the source declares. Copying the registry
+ * path verbatim put that class at `app/Flow/Nodes/git-pr-open/php/`, which PSR-4
+ * cannot autoload: it expects `app/Flow/Nodes/GitPrOpen/`.
+ *
+ * The result installed cleanly, looked right in the file list, and then the
+ * class simply did not exist at runtime. Reported by the Moic Suite integration,
+ * who hand-patched it per node.
+ *
+ * So for PHP the node segment is PascalCased and the `php` part is dropped, and
+ * the path agrees with the namespace by construction.
  */
 export function resolveNodeTargetPath(
   config: FancyConfig,
@@ -104,9 +128,21 @@ export function resolveNodeTargetPath(
 ): string {
   const normalized = target.replace(/\\/g, "/").replace(/^\/+/, "");
   const dirs = resolveNodeDirs(config);
-  const isPhp = normalized.split("/").includes("php");
+  const segments = normalized.split("/").filter(Boolean);
+  const isPhp = segments.includes("php");
 
-  return path.join(cwd, isPhp ? dirs.php : dirs.ts, normalized);
+  if (!isPhp) {
+    return path.join(cwd, dirs.ts, normalized);
+  }
+
+  // A malformed target with no node segment falls back to the registry path
+  // rather than throwing — a bad entry should not stop the other files landing.
+  const node = segments[0];
+  if (node === undefined) {
+    return path.join(cwd, dirs.php, normalized);
+  }
+
+  return path.join(cwd, dirs.php, pascalCase(node), ...segments.slice(2));
 }
 
 export function configPath(cwd: string = process.cwd()): string {
