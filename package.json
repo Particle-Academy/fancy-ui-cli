@@ -1,6 +1,6 @@
 {
   "name": "fancy-cli",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "fancy-ui CLI — vendor Fancy UI component source from the hosted registry into your project (the shadcn-style copy-the-source path).",
   "repository": {
     "type": "git",
@@ -44,7 +44,7 @@
     "vitest": "^3.2.0"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "publishConfig": {
     "access": "public"
