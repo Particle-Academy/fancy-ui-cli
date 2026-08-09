@@ -10,6 +10,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1] — 2026-08-09
+
+### Fixed
+
+- **`fancy-cli --version` reported 0.7.0 while 0.8.0 was published.** The version
+  was a hand-maintained literal in `src/index.ts`, so `--version` and the help
+  header both lied — and a bug report would have carried the wrong version.
+
+  It is now injected from `package.json` at build time, so there is one source of
+  truth and nothing left to drift.
+
+  Worth stating plainly: this had drifted **twice** (0.1.0 against a published
+  0.1.1, now 0.7.0 against 0.8.0), and a test added after the first drift was
+  sitting red and catching this one. A guard nobody acts on is a slower version
+  of no guard, so the literal is gone rather than corrected. The test now asserts
+  the *mechanism* — no version literal in source, and the build injecting
+  `pkg.version` — which cannot be satisfied by editing a number.
+
+### Added
+
+- Six cases to the `satisfiesRange` table, matching `fancy-flow` and
+  `fancy-flow-php`. Two pin places where this convention **deliberately differs
+  from standard semver**: `1.2.3-beta.1` satisfies `^1.2` here and not under
+  npm's `semver`, and `^0.0.1` admits `0.0.2` where standard semver pins it
+  exactly. All three implementations were verified to agree on every case,
+  including these.
+
+
 ## [0.8.0] — 2026-08-07
 
 ### Changed

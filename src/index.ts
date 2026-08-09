@@ -13,7 +13,18 @@ import { bold, cyan, dim, red, yellow } from "./colors.js";
 
 // Kept in sync with package.json by the build; hardcoded so we have zero
 // runtime fs reads of package.json from inside the bundled dist.
-const VERSION = "0.7.0";
+/**
+ * Injected from package.json at build time (see tsup.config.ts).
+ *
+ * It was a hand-maintained literal, and it drifted twice: the binary reported
+ * 0.1.0 against a published 0.1.1, and then 0.7.0 against a published 0.8.0.
+ * A test caught the second one and stayed red — a guard nobody acts on is just
+ * a slower version of no guard, so the literal is gone rather than corrected.
+ *
+ * The fallback is for running from source (tsx/vitest), where no define applies.
+ */
+declare const __CLI_VERSION__: string | undefined;
+const VERSION = typeof __CLI_VERSION__ === "string" ? __CLI_VERSION__ : "0.0.0-dev";
 
 const HELP = `${bold("fancy-cli")} ${dim(`v${VERSION}`)} — vendor Fancy UI component source from the registry.
 
