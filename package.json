@@ -1,7 +1,7 @@
 {
   "name": "fancy-cli",
   "version": "0.8.1",
-  "description": "fancy-ui CLI \u2014 vendor Fancy UI component source from the hosted registry into your project (the shadcn-style copy-the-source path).",
+  "description": "fancy-ui CLI — vendor Fancy UI component source from the hosted registry into your project (the shadcn-style copy-the-source path).",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Particle-Academy/fancy-ui-cli.git"
@@ -41,7 +41,7 @@
     "@types/node": "^20.0.0",
     "tsup": "^8.5.0",
     "typescript": "^5.8.0",
-    "vitest": "^3.2.0"
+    "vitest": "^4.1.11"
   },
   "engines": {
     "node": ">=22"
