@@ -1,5 +1,7 @@
 # fancy-cli
 
+[![Fancified](art/fancified.svg)](https://particle.academy)
+
 The **`fancy-cli` CLI** is the *vendor path* for [Fancy UI](https://ui.particle.academy) — it fetches component source from the hosted registry and writes the files into **your** project, so you own the code (the shadcn-style "copy the source" flow).
 
 Once a component is vendored it's just files in your codebase. There is no runtime dependency on this CLI: delete `fancy.json`, uninstall the CLI, and the vendored components keep working.
@@ -20,7 +22,7 @@ Pin a version for reproducibility. Pin 0.8.2 or newer: 0.8.1 and older print `un
 npx fancy-cli@0.8.2 init
 ```
 
-**Requires Node 18+** (global `fetch`). Zero runtime dependencies.
+**Requires Node 22+** (global `fetch`). Zero runtime dependencies.
 
 ## Quick start
 
