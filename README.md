@@ -14,10 +14,10 @@ Run it with `npx` — no global install required. The `@latest` tag keeps you on
 npx fancy-cli@latest init
 ```
 
-Pin a version for reproducibility:
+Pin a version for reproducibility. Pin 0.8.2 or newer: 0.8.1 and older print `undefined` beside a first-party node, and releases before 0.6 have no update check to tell you they are stale.
 
 ```bash
-npx fancy-cli@0.1.0 init
+npx fancy-cli@0.8.2 init
 ```
 
 **Requires Node 18+** (global `fetch`). Zero runtime dependencies.
@@ -49,9 +49,9 @@ It writes a `fancy.json` at the project root and **refuses to clobber an existin
 | `--force` | Overwrite an existing `fancy.json`. |
 
 ```bash
-npx fancy-cli init
-npx fancy-cli init --yes          # CI-friendly, all defaults
-npx fancy-cli init --force        # reconfigure an existing project
+npx fancy-cli@latest init
+npx fancy-cli@latest init --yes          # CI-friendly, all defaults
+npx fancy-cli@latest init --force        # reconfigure an existing project
 ```
 
 ### `add <name...>`
@@ -82,7 +82,7 @@ npx fancy-cli@latest add card --no-install
 Show every component in the registry, grouped by package with a per-package count and aligned `name  title  description` columns:
 
 ```bash
-npx fancy-cli list
+npx fancy-cli@latest list
 
 # react-fancy (54)
 #   accordion   Accordion   Stateful disclosure surface.
@@ -100,7 +100,7 @@ npx fancy-cli list
 Case-insensitive substring match across `name`, `title`, and `description`:
 
 ```bash
-npx fancy-cli search calendar
+npx fancy-cli@latest search calendar
 ```
 
 ### `diff <name>`
@@ -108,7 +108,7 @@ npx fancy-cli search calendar
 Compare your local vendored copy against the latest registry version and print a unified diff. Useful for spotting upstream improvements you might want to merge in. **It never applies changes** — the whole point of vendoring is that you may have customized the local copy.
 
 ```bash
-npx fancy-cli diff card
+npx fancy-cli@latest diff card
 ```
 
 The diff is a self-contained LCS-based unified diff (no `git` required).
@@ -122,8 +122,8 @@ installed as packages, per runtime, after a compatibility check.
 ### `search nodes <query>`
 
 ```bash
-npx fancy-cli search nodes "route with an llm"
-npx fancy-cli search nodes s3
+npx fancy-cli@latest search nodes "route with an llm"
+npx fancy-cli@latest search nodes s3
 ```
 
 Matches kind, title, description, and category. **Search before you build one** —
@@ -133,7 +133,7 @@ existed and hand-rolling a worse version in your app code.
 ### `list nodes`
 
 ```bash
-npx fancy-cli list nodes
+npx fancy-cli@latest list nodes
 ```
 
 Grouped by category. Every row shows which runtimes the node implements, because

@@ -10,6 +10,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.3] — 2026-09-13
+
+### Fixed
+
+- **The README no longer tells you to pin `npx fancy-cli@0.1.0`.** It was the
+  "pin a version for reproducibility" example, and 0.1.0 has no `add node`, no
+  update check, and prints `undefined` beside a first-party node. The example
+  now pins 0.8.2 and says why that is the floor.
+- **The README's command reference uses `npx fancy-cli@latest …`.** 0.6.0 moved
+  every install string to `@latest` because npx caches by package name and
+  otherwise keeps running whatever copy it fetched first; the `init`, `list`,
+  `search` and `diff` examples here were missed.
+
+Documentation only: **nothing to do.** The CLI's behaviour is unchanged.
+
 ## [0.8.2] — 2026-09-13
 
 ### Fixed
