@@ -68,8 +68,15 @@ export interface FancyDependency {
 
 export interface NodeManifest {
   schemaVersion: number;
-  /** The marketplace source this node came from. Nothing is installed from it. */
-  name: string;
+  /**
+   * The package a community node is published from, when it has one.
+   *
+   * Optional, and absent on first-party nodes: those are source served straight
+   * from the registry, with no package behind them. Never an install target —
+   * nothing is installed from it. See {@link describeNodeSource} for what is
+   * printed instead.
+   */
+  name?: string;
   kind: string;
   aliases?: string[];
   configVersion?: number;
@@ -112,7 +119,8 @@ export interface NodeManifest {
 
 export interface NodeIndexItem {
   kind: string;
-  name: string;
+  /** Absent for a first-party node. See {@link NodeManifest.name}. */
+  name?: string;
   title: string;
   description: string;
   category: string;
@@ -130,6 +138,39 @@ export interface NodeIndex {
 export interface CompatProblem {
   level: "error" | "warning";
   message: string;
+}
+
+/** Kind ids in this scope are first-party; the registry refuses other claimants. */
+const FIRST_PARTY_SCOPE = "@particle-academy/";
+
+/**
+ * Where a node came from, as `add node` prints it beside the kind.
+ *
+ * This printed `manifest.name`. Every first-party manifest set that to
+ * `particle-academy/fancy-flow-nodes`, a package that never existed, so every
+ * first-party install told whoever read it that the node came from a package —
+ * and an agent ran `composer require` on it into a 404.
+ *
+ * The source the CLI actually knows is the registry it fetched the node from,
+ * so that is always what is printed. A community node's package is added beside
+ * it. A first-party node has no package, so its manifest's `name` is ignored
+ * outright rather than trusted to be absent: a registry, a mirror or a cached
+ * artifact can still be serving the old field.
+ */
+export function describeNodeSource(manifest: Pick<NodeManifest, "kind" | "name">, registry: string): string {
+  const from = `from ${registryHost(registry)}`;
+  const name = typeof manifest.name === "string" ? manifest.name.trim() : "";
+
+  return name !== "" && !manifest.kind.startsWith(FIRST_PARTY_SCOPE) ? `${name}, ${from}` : from;
+}
+
+/** `https://ui.particle.academy/` → `ui.particle.academy`. A mirror stays legible. */
+function registryHost(registry: string): string {
+  try {
+    return new URL(registry).host || registry;
+  } catch {
+    return registry;
+  }
 }
 
 function joinUrl(base: string, p: string): string {

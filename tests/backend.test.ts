@@ -16,7 +16,6 @@ import type { NodeManifest } from "../src/nodes.js";
 const manifest = (runtimes: NodeManifest["runtimes"]): NodeManifest =>
   ({
     schemaVersion: 1,
-    name: "particle-academy/fancy-flow-nodes",
     kind: "@pa/thing",
     ui: ["ui"],
     runtimes,

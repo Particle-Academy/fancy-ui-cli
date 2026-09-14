@@ -11,6 +11,7 @@ import {
 } from "../config.js";
 import {
   fetchNode,
+  describeNodeSource,
   detectHostRuntimes,
   checkNodeCompat,
   type NodeManifest,
@@ -234,7 +235,7 @@ export function renderCompat(problems: ReturnType<typeof checkNodeCompat>): stri
 }
 
 /**
- * Install a workflow node package.
+ * Vendor a workflow node's source into the project. There is no package to install.
  *
  * The check that earns this command's existence happens BEFORE any install: a
  * node that does not implement a runtime this project executes on would
@@ -281,7 +282,7 @@ export async function addNode(
     const errors = problems.filter((p) => p.level === "error");
 
     stdout.write(
-      `\n${bold(manifest.kind)} ${dim(manifest.name)}` +
+      `\n${bold(manifest.kind)} ${dim(describeNodeSource(manifest, registry))}` +
         (manifest.verified ? ` ${green("verified")}` : "") +
         (manifest.description ? `\n${dim(manifest.description)}` : "") +
         "\n",

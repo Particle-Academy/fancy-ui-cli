@@ -146,7 +146,17 @@ see that while browsing, not at install.
 npx fancy-cli@latest add node @acme/salesforce_upsert
 ```
 
-Before installing anything, this checks the node against the runtimes **your**
+A node is **vendored source, not a package**: its React kind and the backend for
+your runtime are copied into the project, and nothing is installed for the node
+itself. The first line names the node and where it came from — the registry it
+was fetched from, plus the package a community node is published from. A
+first-party node has no package, so none is ever printed for it:
+
+```
+@particle-academy/ui_effect from ui.particle.academy verified
+```
+
+Before copying anything, this checks the node against the runtimes **your**
 project executes on — read from `@particle-academy/fancy-flow` in `package.json`
 and `particle-academy/fancy-flow-php` in `composer.json`.
 
@@ -157,10 +167,10 @@ than yours, is **refused**:
 ✗ @acme/route_llm implements ts, but this project executes on php.
   It would install, appear in the palette, and then fail to run.
 
-Not installed. Pass --force to install anyway.
+Not added. Pass --force to copy it anyway (the node will appear in the palette and fail at run time).
 ```
 
-That refusal is the point of the command. Without it the node installs cleanly,
+That refusal is the point of the command. Without it the node copies cleanly,
 shows up in the palette, and fails at run time — which looks like it worked.
 
 On success it also prints what you must wire before the node can run:

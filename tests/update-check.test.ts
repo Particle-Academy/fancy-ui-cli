@@ -20,9 +20,7 @@ import type { NodeManifest } from "../src/nodes.js";
 const manifest = (over: Partial<NodeManifest> = {}): NodeManifest =>
   ({
     schemaVersion: 1,
-    name: "@particle-academy/demo",
     kind: "@particle-academy/demo",
-    package: "fancy-flow-nodes",
     runtimes: { js: { npm: "@particle-academy/demo" } },
     ...over,
   }) as NodeManifest;

@@ -10,6 +10,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.2] — 2026-09-13
+
+### Fixed
+
+- **`add node` no longer tells you a first-party node comes from a package.**
+  It printed the manifest's `name` beside the kind, and every first-party
+  manifest set that to `particle-academy/fancy-flow-nodes` — a package that
+  never existed. So every first-party install read as if the node came from a
+  package, and an agent following it ran `composer require` into a 404.
+
+  The line now names the registry the node was actually fetched from:
+
+  ```
+  @particle-academy/ui_effect from ui.particle.academy verified
+  ```
+
+  A community node's package is still shown beside it
+  (`@acme/fancy-flow-salesforce, from ui.particle.academy`). A first-party
+  node's `name` is ignored outright rather than trusted to be absent, because
+  a registry or mirror can still be serving the old field. A manifest with no
+  `name` (optional since `@particle-academy/fancy-flow` 0.70.1) no longer
+  prints `undefined`.
+
+  **What to do:** nothing. Run `npx fancy-cli@latest` to get it — 0.8.1 and
+  older print `undefined` beside a first-party kind once the registry stops
+  serving the invented name. That line is cosmetic; what gets copied is
+  unchanged.
+
 ## [0.8.1] — 2026-08-09
 
 ### Fixed

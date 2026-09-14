@@ -24,7 +24,6 @@ const FMS: FancyDependency = {
 const manifest = (fancyDependencies?: FancyDependency[]): NodeManifest =>
   ({
     schemaVersion: 1,
-    name: "particle-academy/fancy-flow-nodes",
     kind: "@pa/thing",
     ui: ["ui"],
     runtimes: { ts: { files: ["js"], engine: ">=0.30.0" } },
