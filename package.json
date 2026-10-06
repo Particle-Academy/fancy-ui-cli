@@ -1,57 +1,57 @@
 {
-  "name": "fancy-cli",
-  "version": "0.8.3",
-  "description": "fancy-ui CLI — vendor Fancy UI component source from the hosted registry into your project (the shadcn-style copy-the-source path).",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Particle-Academy/fancy-ui-cli.git"
-  },
-  "homepage": "https://ui.particle.academy/docs/cli",
-  "bugs": "https://github.com/Particle-Academy/fancy-ui-cli/issues",
-  "type": "module",
-  "bin": {
-    "fancy-cli": "./dist/index.js"
-  },
-  "files": [
-    "dist",
-    "README.md",
-    "CHANGELOG.md"
-  ],
-  "sideEffects": false,
-  "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
-    "lint": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "clean": "rm -rf dist",
-    "prepublishOnly": "tsup"
-  },
-  "keywords": [
-    "fancy-ui",
-    "cli",
-    "registry",
-    "vendor",
-    "shadcn",
-    "react",
-    "components",
-    "tailwind",
-    "particle-academy"
-  ],
-  "devDependencies": {
-    "@types/node": "^20.0.0",
-    "tsup": "^8.5.0",
-    "typescript": "^5.8.0",
-    "vitest": "^4.1.11"
-  },
-  "engines": {
-    "node": ">=22"
-  },
-  "publishConfig": {
-    "access": "public"
-  },
-  "license": "MIT",
-  "overrides": {
-    "esbuild": "^0.28.1"
-  }
+    "name": "fancy-cli",
+    "version": "0.8.3",
+    "description": "fancy-ui CLI — vendor Fancy UI component source from the hosted registry into your project (the shadcn-style copy-the-source path).",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Particle-Academy/fancy-ui-cli.git"
+    },
+    "homepage": "https://ui.particle.academy/docs/cli",
+    "bugs": "https://github.com/Particle-Academy/fancy-ui-cli/issues",
+    "type": "module",
+    "bin": {
+        "fancy-cli": "./dist/index.js"
+    },
+    "files": [
+        "dist",
+        "README.md",
+        "CHANGELOG.md"
+    ],
+    "sideEffects": false,
+    "scripts": {
+        "build": "tsup",
+        "dev": "tsup --watch",
+        "lint": "tsc --noEmit",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "clean": "rm -rf dist",
+        "prepublishOnly": "tsup"
+    },
+    "keywords": [
+        "fancy-ui",
+        "cli",
+        "registry",
+        "vendor",
+        "shadcn",
+        "react",
+        "components",
+        "tailwind",
+        "particle-academy"
+    ],
+    "devDependencies": {
+        "@types/node": "^22",
+        "tsup": "^8.5.0",
+        "typescript": "^5.8.0",
+        "vitest": "^4.1.11"
+    },
+    "engines": {
+        "node": ">=22"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
+    "license": "MIT",
+    "overrides": {
+        "esbuild": "^0.28.1"
+    }
 }
