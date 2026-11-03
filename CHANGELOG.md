@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **`CHANGELOG.md` is now in the published tarball.** `files` did not list it, so npm never shipped it. Nothing for you to do.
+
 ### Security
 
 - **The package manager is now found on `PATH` and run by absolute path.** On Windows, `add` and `add node` could run a `npm` / `pnpm` / `yarn` / `bun` program from the project directory instead of the installed one, and a lockfile in the project chose which name was looked up. Relative `PATH` entries and directories inside the project, including `node_modules/.bin`, are no longer searched, and the same applies to the programs a manager's own shim runs. If the manager isn't found, the command says so by name and exits non-zero. **Nothing for you to do, unless your package manager exists only inside the project directory:** then install it somewhere else on `PATH`.
