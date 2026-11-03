@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-11-03
+
+Backport to the kit 0.4 maintenance line. This release is published under the
+`0.4-maintenance` dist-tag and does not move `latest`.
+
 ### Fixed
 
 - **`CHANGELOG.md` is now in the published tarball.** `files` did not list it, so npm never shipped it. Nothing for you to do.
