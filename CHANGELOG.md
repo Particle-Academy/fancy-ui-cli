@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **The package manager is now found on `PATH` and run by absolute path.** On Windows, `add` and `add node` could run a `npm` / `pnpm` / `yarn` / `bun` program from the project directory instead of the installed one, and a lockfile in the project chose which name was looked up. Relative `PATH` entries and directories inside the project, including `node_modules/.bin`, are no longer searched, and the same applies to the programs a manager's own shim runs. If the manager isn't found, the command says so by name and exits non-zero. **Nothing for you to do, unless your package manager exists only inside the project directory:** then install it somewhere else on `PATH`.
+- **Registry `dependencies` no longer reach a command line unchecked.** On Windows they were passed through `cmd.exe` unquoted. They must now be bare npm package names; anything else, including a version range, path or URL, is refused before any process starts, and is not printed as a command under `--no-install`. Exits non-zero with the vendored files left in place, and the hint gives the install command for the valid names. **Nothing for you to do** on the hosted registry beyond running that command if you see the error. If you run your own registry and list versions in `dependencies`, list bare names instead.
+
 ## [0.7.0] - 2026-07-31
 
 ### Fixed
