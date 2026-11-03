@@ -49,5 +49,9 @@ jobs:
       # on npmjs.com for the `fancy-cli` package; the bootstrap NPM_TOKEN secret
       # has been removed. OIDC needs npm 11.5+; the runner ships npm 10, so fetch
       # a fresh npm via npx for the publish.
+      #
+      # Maintenance branch: a release here must never become `latest`, so it goes
+      # out under its own dist-tag. Not plain `0.4`: npm refuses a tag that parses
+      # as a SemVer range.
       - name: Publish
-        run: npx -y npm@11.18.0 publish --provenance --access public
+        run: npx -y npm@11.18.0 publish --provenance --access public --tag 0.4-maintenance
