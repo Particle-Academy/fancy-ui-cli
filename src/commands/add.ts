@@ -9,6 +9,7 @@ import {
 } from "../config.js";
 import { fetchItem, type RegistryItem } from "../registry.js";
 import {
+  assertInstallableDependencies,
   detectPackageManager,
   runInstall,
   installCommand,
@@ -136,14 +137,14 @@ export async function add(
 
   // Install npm dependencies.
   if (result.npmDeps.length > 0) {
+    const pm = await detectPackageManager(cwd);
+    assertInstallableDependencies(pm, result.npmDeps);
     if (flags.install === false) {
       stdout.write(
         `\n${bold("npm dependencies needed")} ${dim("(install skipped — --no-install)")}\n`,
       );
-      const pm = await detectPackageManager(cwd);
       stdout.write(`  ${dim("run:")} ${cyan(installCommand(pm, result.npmDeps))}\n`);
     } else {
-      const pm = await detectPackageManager(cwd);
       stdout.write(
         `\n${bold("Installing dependencies")} ${dim(`(${pm})`)}: ${result.npmDeps
           .map((d) => cyan(d))
@@ -153,6 +154,9 @@ export async function add(
         await runInstall(pm, result.npmDeps, cwd);
         stdout.write(`${green("✓")} Dependencies installed.\n`);
       } catch (err) {
+        // Nothing ran, so this is not an install that merely failed: say so and
+        // exit non-zero instead of printing "Done.".
+        if (err instanceof CliError) throw err;
         stdout.write(
           `${red("✗")} Could not run ${pm}: ${(err as Error).message}\n` +
             dim(`  Install them manually: ${installCommand(pm, result.npmDeps)}\n`),

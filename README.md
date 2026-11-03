@@ -67,6 +67,8 @@ Fetches one or more components and writes them to disk. For each name:
 
 It **never overwrites a file you've already vendored** unless you pass `--overwrite`, and prints a clean summary of files written, files skipped, registry deps pulled, and npm deps installed.
 
+The package manager is looked up on `PATH`: absolute entries only, never the current directory and never anywhere inside the project, including its `node_modules/.bin`. If it isn't found, `add` says so and exits non-zero, leaving the vendored files in place. A `dependencies` entry that isn't a bare npm package name is refused the same way, and nothing is installed.
+
 | Flag | Effect |
 |---|---|
 | `--overwrite` | Replace files that already exist on disk. |

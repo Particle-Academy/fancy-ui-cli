@@ -18,7 +18,13 @@ import {
   type FancyDependency,
   type HostRuntimes,
 } from "../nodes.js";
-import { detectPackageManager, runInstall, installCommand, type PackageManager } from "../pm.js";
+import {
+  assertInstallableDependencies,
+  detectPackageManager,
+  runInstall,
+  installCommand,
+  type PackageManager,
+} from "../pm.js";
 import { CliError } from "../errors.js";
 import { bold, green, yellow, dim, cyan, red } from "../colors.js";
 
@@ -361,6 +367,7 @@ export async function addNode(
   // node itself. There is no package for the node.
   const uniqueNpm = [...new Set(npmDeps)];
   if (uniqueNpm.length > 0) {
+    assertInstallableDependencies(pm, uniqueNpm);
     if (flags.install !== false) {
       stdout.write(`\n${dim(`Installing dependencies: ${installCommand(pm, uniqueNpm)}`)}\n`);
       await runInstall(pm, uniqueNpm, cwd);
