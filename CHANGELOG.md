@@ -10,10 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-11-15
+
+### Fixed
+
+- **`add` no longer reports files it just wrote as "Skipped existing file(s)".** The registry inlines shared `lib/` files (`cn.ts`, `use-id.ts`, ...) into every item that needs them, so adding several components, or one with registry dependencies, listed each shared file as skipped and told you to pass `--overwrite`, on a project where nothing existed before the run. Adding react-fancy's media Channel components to an empty project reported 96 such files. A file this run already wrote is now not revisited, and a file that genuinely existed beforehand is counted once rather than once per item that carries it. Nothing to do: what lands on disk is unchanged, only the summary is right.
+
 ### Changed
 
 - Rebranded the display name to Fancy Dev Kit (for SaaSy Agents). Package names, the npm scope, `fancy-cli`, the `fancy-ui` MCP server id and plugin name, and every URL are unchanged, so nothing to do.
-
 - **Releases need a lab-run certificate.** `publish.yml` gains a read-only
   `lab-certificate` job that every publishing job needs: a tag is published only
   when the fancy-labs lab has certified that exact version and commit. Consumers

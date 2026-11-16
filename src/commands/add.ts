@@ -54,6 +54,12 @@ async function resolveItem(
   for (const file of item.files) {
     const dest = resolveTargetPath(config, file.target, cwd);
     const rel = path.relative(cwd, dest).replace(/\\/g, "/");
+    // Shared lib files are inlined into every item that needs them; one this
+    // run already wrote is neither "existing" nor worth writing again, and one
+    // it already skipped is counted once, not once per item that carries it.
+    if (result.filesWritten.includes(rel) || result.filesSkipped.includes(rel)) {
+      continue;
+    }
     if ((await fileExists(dest)) && !flags.overwrite) {
       result.filesSkipped.push(rel);
       continue;

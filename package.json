@@ -1,6 +1,6 @@
 {
     "name": "fancy-cli",
-    "version": "0.9.0",
+    "version": "0.9.1",
     "description": "fancy-ui CLI — vendor Fancy Dev Kit component source from the hosted registry into your project (the shadcn-style copy-the-source path).",
     "repository": {
         "type": "git",

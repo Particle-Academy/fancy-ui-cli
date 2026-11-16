@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { mkdtemp, rm, readFile, writeFile, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { mockFetch } from "./fixtures.js";
+import { mockFetch, items } from "./fixtures.js";
 import { add } from "../src/commands/add.js";
 import { writeConfig, type FancyConfig } from "../src/config.js";
 
@@ -103,5 +103,96 @@ describe("add", () => {
   it("dedupes a component requested twice", async () => {
     const code = await add(["card", "card"], { install: false }, dir);
     expect(code).toBe(0);
+  });
+
+  // The hosted registry inlines shared lib files (cn.ts, use-id.ts, ...) into
+  // EVERY item that needs them. A file this run already wrote must not come
+  // back as "Skipped existing file (pass --overwrite)" from the next item.
+  it("does not report a file it wrote earlier in the same run as skipped", async () => {
+    items["chip"] = {
+      name: "chip",
+      type: "registry:ui",
+      title: "Chip",
+      description: "Small label.",
+      package: "react-fancy",
+      dependencies: [],
+      registryDependencies: [],
+      files: [
+        {
+          path: "components/fancy/chip/Chip.tsx",
+          target: "components/fancy/chip/Chip.tsx",
+          type: "registry:ui",
+          content: "export const Chip = () => null;\n",
+        },
+        {
+          path: "components/fancy/lib/cn.ts",
+          target: "components/fancy/lib/cn.ts",
+          type: "registry:lib",
+          content: "export function cn() {}\n",
+        },
+      ],
+    };
+    const calls: string[] = [];
+    vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
+      calls.push(String(chunk));
+      return true;
+    });
+    try {
+      const code = await add(["card", "chip"], { install: false }, dir);
+      expect(code).toBe(0);
+      const out = calls.join("");
+      expect(out).not.toContain("Skipped");
+      expect(out).toContain("Files written (4)");
+      expect((out.match(/lib\/cn\.ts/g) ?? []).length).toBe(1);
+    } finally {
+      delete items["chip"];
+    }
+  });
+
+  it("still reports a file that existed before the run as skipped", async () => {
+    await mkdir(compDir("lib"), { recursive: true });
+    await writeFile(compDir("lib", "cn.ts"), "// MINE\n", "utf8");
+    const calls: string[] = [];
+    vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
+      calls.push(String(chunk));
+      return true;
+    });
+    await add(["card"], { install: false }, dir);
+    expect(calls.join("")).toContain("Skipped 1 existing file(s)");
+  });
+
+  it("counts a pre-existing shared file once, however many items inline it", async () => {
+    items["chip"] = {
+      name: "chip",
+      type: "registry:ui",
+      title: "Chip",
+      description: "Small label.",
+      package: "react-fancy",
+      dependencies: [],
+      registryDependencies: [],
+      files: [
+        {
+          path: "components/fancy/lib/cn.ts",
+          target: "components/fancy/lib/cn.ts",
+          type: "registry:lib",
+          content: "export function cn() {}\n",
+        },
+      ],
+    };
+    await mkdir(compDir("lib"), { recursive: true });
+    await writeFile(compDir("lib", "cn.ts"), "// MINE\n", "utf8");
+    const calls: string[] = [];
+    vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
+      calls.push(String(chunk));
+      return true;
+    });
+    try {
+      await add(["card", "chip"], { install: false }, dir);
+      const out = calls.join("");
+      expect(out).toContain("Skipped 1 existing file(s)");
+      expect((out.match(/lib\/cn\.ts/g) ?? []).length).toBe(1);
+    } finally {
+      delete items["chip"];
+    }
   });
 });
