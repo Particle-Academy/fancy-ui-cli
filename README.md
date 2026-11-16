@@ -2,7 +2,7 @@
 
 [![Fancified](art/fancified.svg)](https://particle.academy)
 
-The **`fancy-cli` CLI** is the *vendor path* for [Fancy UI](https://ui.particle.academy) — it fetches component source from the hosted registry and writes the files into **your** project, so you own the code (the shadcn-style "copy the source" flow).
+The **`fancy-cli` CLI** is the *vendor path* for [Fancy Dev Kit](https://ui.particle.academy) — it fetches component source from the hosted registry and writes the files into **your** project, so you own the code (the shadcn-style "copy the source" flow).
 
 Once a component is vendored it's just files in your codebase. There is no runtime dependency on this CLI: delete `fancy.json`, uninstall the CLI, and the vendored components keep working.
 
@@ -253,7 +253,7 @@ Point `registry` at any URL that follows the [registry contract](https://ui.part
 
 - **Not a build tool.** Once components are vendored they're plain files; your existing bundler compiles them.
 - **Not a runtime dependency.** Delete `fancy.json` and uninstall the CLI — the vendored components keep working.
-- **Not the only way to use Fancy UI.** The npm-install path is fully supported; see the [installation docs](https://ui.particle.academy/docs/installation).
+- **Not the only way to use Fancy Dev Kit.** The npm-install path is fully supported; see the [installation docs](https://ui.particle.academy/docs/installation).
 
 ## License
 
@@ -261,7 +261,7 @@ MIT
 
 ---
 
-## ⭐ Star Fancy UI
+## ⭐ Star Fancy Dev Kit
 
 If this package is useful to you, a quick ⭐ on the repo really helps us build a better kit. Thank you!
 

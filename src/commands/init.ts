@@ -65,7 +65,7 @@ export async function init(flags: InitFlags): Promise<number> {
   let autoInstall = true;
 
   if (!flags.yes) {
-    stdout.write(bold("\nConfigure Fancy UI for this project\n"));
+    stdout.write(bold("\nConfigure Fancy Dev Kit for this project\n"));
     stdout.write(dim("Press Enter to accept each default.\n\n"));
     const rl = readline.createInterface({ input: stdin, output: stdout });
     try {

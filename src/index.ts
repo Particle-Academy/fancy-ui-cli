@@ -26,7 +26,7 @@ import { bold, cyan, dim, red, yellow } from "./colors.js";
 declare const __CLI_VERSION__: string | undefined;
 const VERSION = typeof __CLI_VERSION__ === "string" ? __CLI_VERSION__ : "0.0.0-dev";
 
-const HELP = `${bold("fancy-cli")} ${dim(`v${VERSION}`)} — vendor Fancy UI component source from the registry.
+const HELP = `${bold("fancy-cli")} ${dim(`v${VERSION}`)} — vendor Fancy Dev Kit component source from the registry.
 
 ${bold("Usage")}
   npx fancy-cli <command> [options]
